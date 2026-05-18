@@ -1,5 +1,5 @@
 import { HttpApi } from "@confect/server";
-import { HttpMiddleware } from "@effect/platform";
+import { HttpMiddleware } from "effect/unstable/http";
 import { flow } from "effect";
 import { ApiLive } from "./http/path-prefix";
 

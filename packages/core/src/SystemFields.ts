@@ -96,7 +96,11 @@ export type ExtendWithSystemFields<
           StructModule.Assign<Fields, SystemFieldsSchema<TableName>["fields"]>
         >
       >
-    : never;
+    : // Fallback: when TableSchema is the broad `Codec<any, any, never, never>` bound
+      // (e.g. inside `Table.AnyWithProps` / `WithName` value-level usages), we don't
+      // know the precise table shape. Returning `Schema.Codec<any, any, never, never>`
+      // (rather than `never`) keeps the Table type assignable in those positions.
+      Schema.Codec<any, any, never, never>;
 
 export type WithSystemFields<TableName extends string, Document> = Expand<
   Readonly<IdField<TableName>> & Readonly<NonIdSystemFields> & Document

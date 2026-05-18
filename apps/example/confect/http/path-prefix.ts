@@ -4,7 +4,7 @@ import {
   HttpApiEndpoint,
   HttpApiGroup,
   OpenApi,
-} from "@effect/platform";
+} from "effect/unstable/httpapi";
 import { Effect, Layer, Schema } from "effect";
 import refs from "../_generated/refs";
 import { QueryRunner } from "../_generated/services";
