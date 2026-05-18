@@ -10,7 +10,7 @@ import {
 } from "convex/server";
 import type { Value } from "convex/values";
 import { ConvexError } from "convex/values";
-import { Effect, Either, Layer, pipe, Schema } from "effect";
+import { Effect, Layer, pipe, Result, Schema } from "effect";
 import * as ActionCtx from "./ActionCtx";
 import * as ActionRunner from "./ActionRunner";
 import * as Auth from "./Auth";
@@ -135,22 +135,24 @@ export const runHandlerPromise =
       return Effect.runPromise(Effect.orDie(effect));
     }
     const withConvexError = effect.pipe(
-      Effect.catchAll((typedError) =>
-        pipe(
-          Schema.encodeEffect(errorSchema)(typedError),
-          Effect.orDie,
-          Effect.andThen((encodedError) =>
-            Effect.fail(new ConvexError(encodedError)),
+      Effect.matchEffect({
+        onFailure: (typedError: E) =>
+          pipe(
+            Schema.encodeEffect(errorSchema)(typedError),
+            Effect.orDie,
+            Effect.andThen((encodedError) =>
+              Effect.fail(new ConvexError(encodedError)),
+            ),
           ),
-        ),
-      ),
+        onSuccess: (value: A) => Effect.succeed(value),
+      }),
     );
-    return Effect.runPromise(Effect.either(withConvexError)).then(
-      Either.match({
-        onLeft: (error) => {
+    return Effect.runPromise(Effect.result(withConvexError)).then(
+      Result.match({
+        onFailure: (error) => {
           throw error;
         },
-        onRight: (value) => value,
+        onSuccess: (value) => value,
       }),
     );
   };
@@ -170,9 +172,9 @@ export const actionFunctionBase = <
   handler,
   createLayer,
 }: {
-  args: Schema.Schema<Args, ConvexArgs>;
-  returns: Schema.Schema<Returns, ConvexReturns>;
-  error: Schema.Schema<Error, Value> | undefined;
+  args: Schema.Codec<Args, ConvexArgs, never, never>;
+  returns: Schema.Codec<Returns, ConvexReturns, never, never>;
+  error: Schema.Codec<Error, Value, never, never> | undefined;
   handler: (a: Args) => Effect.Effect<Returns, E, R>;
   createLayer: (
     ctx: GenericActionCtx<DataModel.ToConvex<DataModel.FromSchema<Schema>>>,
