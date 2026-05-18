@@ -1,7 +1,15 @@
 import type { FunctionSpec, RuntimeAndFunctionType } from "@confect/core";
 import type * as FunctionProvenance from "@confect/core/FunctionProvenance";
-import type { NodeContext } from "@effect/platform-node";
 import type { Effect } from "effect";
+
+// TODO(effect4): @effect/platform-node is gone in v4. The NodeContext was the
+// service set provided by Node-only actions. Replace with the appropriate
+// effect/unstable/* service composition (FileSystem/Path/CommandExecutor) once
+// those land for v4. Until then NodeAction handlers don't gain extra context.
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace NodeContext {
+  export type NodeContext = never;
+}
 import type * as ActionCtx from "./ActionCtx";
 import type * as ActionRunner from "./ActionRunner";
 import type * as Auth from "./Auth";

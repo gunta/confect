@@ -50,10 +50,14 @@ export const make = <Api_ extends Api.AnyWithProps>(
 export const finalize = <Api_ extends Api.AnyWithProps>(
   impl: Layer.Layer<Impl<Api_, "Unfinalized">>,
 ): Layer.Layer<Impl<Api_, "Finalized">> =>
-  Layer.map(impl, (context) =>
-    Context.make(Impl<Api_, "Finalized">(), {
-      [TypeId]: TypeId,
-      api: Context.get(context, Impl<Api_, "Unfinalized">()).api,
-      finalizationStatus: "Finalized",
-    }),
-  );
+  Layer.effect(
+    Impl<Api_, "Finalized">(),
+    Effect.map(
+      Effect.service(Impl<Api_, "Unfinalized">()),
+      (unfinalized) => ({
+        [TypeId]: TypeId,
+        api: unfinalized.api,
+        finalizationStatus: "Finalized" as const,
+      }),
+    ),
+  ).pipe(Layer.provide(impl));

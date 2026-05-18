@@ -20,9 +20,10 @@ const make = (storageActionWriter: ConvexStorageActionWriter) => ({
     Effect.promise(() => storageActionWriter.store(blob, options)),
 });
 
-export class StorageActionWriter extends Context.Service(
-  "@confect/server/StorageActionWriter",
-)<StorageActionWriter, ReturnType<typeof make>>() {
+export class StorageActionWriter extends Context.Service<
+  StorageActionWriter,
+  ReturnType<typeof make>
+>()("@confect/server/StorageActionWriter") {
   static readonly layer = (storageActionWriter: ConvexStorageActionWriter) =>
     Layer.succeed(this, make(storageActionWriter));
 }
