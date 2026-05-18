@@ -1,19 +1,22 @@
 import { FunctionImpl, GroupImpl } from "@confect/server";
-import { Command } from "effect/unstable/httpapi";
 import { Console, Duration, Effect, Layer } from "effect";
 import nodeApi from "../_generated/nodeApi";
 
+// TODO(effect4): v3 invoked an `echo` subprocess via `@effect/platform`'s
+// `Command.make` to demo shelling out from a Node action. v4 moved the
+// process API to `effect/unstable/process/ChildProcess` and now requires a
+// `ChildProcessSpawner` layer, which the Convex runtime doesn't expose. The
+// demo's observable behavior is just a log line, so we inline it here. If
+// the example ever needs real subprocess execution, wire ChildProcessSpawner
+// at the runtime boundary in `@confect/server`.
 const send = FunctionImpl.make(
   nodeApi,
   "email",
   "send",
   Effect.fn(function* ({ to, subject, body }) {
-    const result = yield* Command.make(
-      "echo",
+    yield* Console.log(
       `Sending email to ${to} with subject ${subject} and body ${body}…`,
-    ).pipe(Command.stdout("pipe"), Command.string, Effect.orDie);
-
-    yield* Console.log(result);
+    );
 
     yield* Effect.sleep(Duration.seconds(1));
 
