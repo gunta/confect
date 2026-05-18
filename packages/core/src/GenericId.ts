@@ -1,7 +1,7 @@
 import type { GenericId as ConvexGenericId } from "convex/values";
 import { Option, Schema, SchemaAST } from "effect";
 
-const ConvexIdKey = "@gunta/confect-core/ConvexId";
+const ConvexIdKey = "@confect/core/ConvexId";
 
 export const GenericId = <TableName extends string>(
   tableName: TableName,

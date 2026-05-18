@@ -1,4 +1,4 @@
-import { GroupSpec } from "@gunta/confect-core";
+import { GroupSpec } from "@confect/core";
 import { notes } from "./notesAndRandom/notes.spec";
 import { random } from "./notesAndRandom/random.spec";
 

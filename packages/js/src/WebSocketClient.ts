@@ -1,4 +1,4 @@
-import * as Ref from "@gunta/confect-core/Ref";
+import * as Ref from "@confect/core/Ref";
 import { ConvexClient } from "convex/browser";
 import { Cause, Context, Effect, Layer, Queue, Schema, Stream } from "effect";
 
@@ -151,7 +151,7 @@ const make = (
  */
 export const WebSocketClient = Context.Service<
   Effect.Success<ReturnType<typeof make>>
->("@gunta/confect-js/WebSocketClient");
+>("@confect/js/WebSocketClient");
 
 export type WebSocketClient = typeof WebSocketClient.Identifier;
 

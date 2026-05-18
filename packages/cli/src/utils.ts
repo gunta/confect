@@ -1,4 +1,4 @@
-import type { FunctionSpec, Spec } from "@gunta/confect-core";
+import type { FunctionSpec, Spec } from "@confect/core";
 import { FileSystem, Path } from "@effect/platform";
 import type { PlatformError } from "@effect/platform/Error";
 import {
@@ -28,8 +28,8 @@ export const removePathExtension = (pathStr: string) =>
   });
 
 export const EXTERNAL_PACKAGES = [
-  "@gunta/confect-core",
-  "@gunta/confect-server",
+  "@confect/core",
+  "@confect/server",
   "effect",
   "@effect/*",
 ];

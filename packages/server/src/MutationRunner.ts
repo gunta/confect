@@ -1,4 +1,4 @@
-import * as Ref from "@gunta/confect-core/Ref";
+import * as Ref from "@confect/core/Ref";
 import { type GenericMutationCtx } from "convex/server";
 import type { ParseResult, Effect } from "effect";
 import { Context, Layer } from "effect";
@@ -20,7 +20,7 @@ const make =
     );
 
 export const MutationRunner = Context.Service<ReturnType<typeof make>>(
-  "@gunta/confect-server/MutationRunner",
+  "@confect/server/MutationRunner",
 );
 export type MutationRunner = typeof MutationRunner.Identifier;
 

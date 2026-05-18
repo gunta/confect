@@ -21,7 +21,7 @@ const make = (storageActionWriter: ConvexStorageActionWriter) => ({
 });
 
 export class StorageActionWriter extends Effect.Tag(
-  "@gunta/confect-server/StorageActionWriter",
+  "@confect/server/StorageActionWriter",
 )<StorageActionWriter, ReturnType<typeof make>>() {
   static readonly layer = (storageActionWriter: ConvexStorageActionWriter) =>
     Layer.succeed(this, make(storageActionWriter));

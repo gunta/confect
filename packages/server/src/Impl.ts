@@ -3,7 +3,7 @@ import type * as Api from "./Api";
 import type { Groups as ApiGroups } from "./Api";
 import type * as GroupImpl from "./GroupImpl";
 
-export const TypeId = "@gunta/confect-server/Impl";
+export const TypeId = "@confect/server/Impl";
 export type TypeId = typeof TypeId;
 
 export const isImpl = (u: unknown): u is AnyWithProps =>
@@ -29,7 +29,7 @@ export const Impl = <
   Api_ extends Api.AnyWithProps,
   FinalizationStatus_ extends FinalizationStatus,
 >() =>
-  Context.Service<Impl<Api_, FinalizationStatus_>>(`@gunta/confect-server/Impl`);
+  Context.Service<Impl<Api_, FinalizationStatus_>>(`@confect/server/Impl`);
 
 export const make = <Api_ extends Api.AnyWithProps>(
   api: Api_,

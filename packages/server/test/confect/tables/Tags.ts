@@ -1,4 +1,4 @@
-import { Table } from "@gunta/confect-server";
+import { Table } from "@confect/server";
 import { Schema } from "effect";
 
 export type Tags = {

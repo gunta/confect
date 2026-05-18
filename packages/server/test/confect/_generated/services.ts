@@ -14,7 +14,7 @@ import {
   StorageReader as StorageReader_,
   StorageWriter as StorageWriter_,
   VectorSearch as VectorSearch_,
-} from "@gunta/confect-server";
+} from "@confect/server";
 import type schemaDefinition from "../schema";
 
 export const Auth = Auth_.Auth;

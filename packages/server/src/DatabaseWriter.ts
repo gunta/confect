@@ -136,7 +136,7 @@ export const DatabaseWriter = <
   DatabaseSchema_ extends DatabaseSchema.AnyWithProps,
 >() =>
   Context.Service<ReturnType<typeof make<DatabaseSchema_>>>(
-    "@gunta/confect-server/DatabaseWriter",
+    "@confect/server/DatabaseWriter",
   );
 
 export type DatabaseWriter<

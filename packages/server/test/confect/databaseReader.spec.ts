@@ -3,7 +3,7 @@ import {
   GenericId,
   GroupSpec,
   PaginationResult,
-} from "@gunta/confect-core";
+} from "@confect/core";
 import { Schema } from "effect";
 import { Notes } from "./tables/Notes";
 

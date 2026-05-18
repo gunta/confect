@@ -35,7 +35,7 @@ export const make =
 
 export const VectorSearch = <DataModel_ extends DataModel.AnyWithProps>() =>
   Context.Service<ReturnType<typeof make<DataModel_>>>(
-    "@gunta/confect-server/VectorSearch",
+    "@confect/server/VectorSearch",
   );
 
 export type VectorSearch<DataModel_ extends DataModel.AnyWithProps> =

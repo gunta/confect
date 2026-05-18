@@ -3,7 +3,7 @@ import { Effect, Ref, Schema } from "effect";
 import { ConvexDirectory } from "./ConvexDirectory";
 
 export class ConfectDirectory extends Effect.Service<ConfectDirectory>()(
-  "@gunta/confect-cli/ConfectDirectory",
+  "@confect/cli/ConfectDirectory",
   {
     effect: Effect.gen(function* () {
       const convexDirectory = yield* findConfectDirectory;

@@ -94,24 +94,24 @@ importers:
 
   apps/example:
     dependencies:
+      '@confect/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@confect/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@confect/react':
+        specifier: workspace:*
+        version: link:../../packages/react
+      '@confect/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@convex-dev/workpool':
         specifier: ^0.4.2
         version: 0.4.6(convex-helpers@0.1.118(@standard-schema/spec@1.1.0)(convex@1.39.1(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(convex@1.39.1(react@19.2.4))
       '@effect/platform':
         specifier: 0.96.1
         version: 0.96.1(effect@4.0.0-beta.67)
-      '@gunta/confect-cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
-      '@gunta/confect-core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@gunta/confect-react':
-        specifier: workspace:*
-        version: link:../../packages/react
-      '@gunta/confect-server':
-        specifier: workspace:*
-        version: link:../../packages/server
       convex:
         specifier: 1.39.1
         version: 1.39.1(react@19.2.4)
@@ -161,6 +161,12 @@ importers:
 
   packages/cli:
     dependencies:
+      '@confect/core':
+        specifier: workspace:*
+        version: link:../core
+      '@confect/server':
+        specifier: workspace:*
+        version: link:../server
       '@effect/cli':
         specifier: ^0.75.1
         version: 0.75.1(@effect/platform@0.96.1(effect@4.0.0-beta.67))(@effect/printer-ansi@0.49.0(@effect/typeclass@0.40.0(effect@4.0.0-beta.67))(effect@4.0.0-beta.67))(@effect/printer@0.49.0(@effect/typeclass@0.40.0(effect@4.0.0-beta.67))(effect@4.0.0-beta.67))(effect@4.0.0-beta.67)
@@ -176,12 +182,6 @@ importers:
       '@effect/printer-ansi':
         specifier: ^0.49.0
         version: 0.49.0(@effect/typeclass@0.40.0(effect@4.0.0-beta.67))(effect@4.0.0-beta.67)
-      '@gunta/confect-core':
-        specifier: workspace:*
-        version: link:../core
-      '@gunta/confect-server':
-        specifier: workspace:*
-        version: link:../server
       code-block-writer:
         specifier: ^13.0.3
         version: 13.0.3
@@ -277,7 +277,7 @@ importers:
 
   packages/js:
     dependencies:
-      '@gunta/confect-core':
+      '@confect/core':
         specifier: workspace:*
         version: link:../core
       convex:
@@ -314,7 +314,7 @@ importers:
 
   packages/react:
     dependencies:
-      '@gunta/confect-core':
+      '@confect/core':
         specifier: workspace:*
         version: link:../core
       react:
@@ -357,7 +357,7 @@ importers:
 
   packages/server:
     dependencies:
-      '@gunta/confect-core':
+      '@confect/core':
         specifier: workspace:*
         version: link:../core
       convex:
@@ -367,15 +367,15 @@ importers:
       '@ark/attest':
         specifier: 0.56.0
         version: 0.56.0(typescript@5.9.3)
+      '@confect/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@confect/test':
+        specifier: workspace:*
+        version: link:../test
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.0.2(jiti@1.21.7))
-      '@gunta/confect-cli':
-        specifier: workspace:*
-        version: link:../cli
-      '@gunta/confect-test':
-        specifier: workspace:*
-        version: link:../test
       '@swc/jest':
         specifier: 0.2.39
         version: 0.2.39(@swc/core@1.15.33)
@@ -424,10 +424,10 @@ importers:
 
   packages/test:
     dependencies:
-      '@gunta/confect-core':
+      '@confect/core':
         specifier: workspace:*
         version: link:../core
-      '@gunta/confect-server':
+      '@confect/server':
         specifier: workspace:*
         version: link:../server
       convex:

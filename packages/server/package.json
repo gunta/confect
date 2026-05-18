@@ -1,5 +1,5 @@
 {
-  "name": "@gunta/confect-server",
+  "name": "@confect/server",
   "version": "7.0.0",
   "description": "Backend bindings to the Convex platform",
   "repository": {
@@ -57,8 +57,8 @@
   "license": "ISC",
   "devDependencies": {
     "@ark/attest": "0.56.0",
-    "@gunta/confect-cli": "workspace:*",
-    "@gunta/confect-test": "workspace:*",
+    "@confect/cli": "workspace:*",
+    "@confect/test": "workspace:*",
     "@eslint/js": "10.0.1",
     "@swc/jest": "0.2.39",
     "@types/node": "25.3.3",
@@ -77,7 +77,7 @@
     "vitest": "3.2.4"
   },
   "peerDependencies": {
-    "@gunta/confect-core": "workspace:*",
+    "@confect/core": "workspace:*",
     "convex": "^1.39.0",
     "effect": "4.0.0-beta.67"
   },

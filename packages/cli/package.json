@@ -1,5 +1,5 @@
 {
-  "name": "@gunta/confect-cli",
+  "name": "@confect/cli",
   "version": "7.0.0",
   "description": "Developer tooling for codegen and sync",
   "repository": {
@@ -76,8 +76,8 @@
     "vitest": "3.2.4"
   },
   "peerDependencies": {
-    "@gunta/confect-core": "workspace:*",
-    "@gunta/confect-server": "workspace:*",
+    "@confect/core": "workspace:*",
+    "@confect/server": "workspace:*",
     "effect": "4.0.0-beta.67"
   },
   "engines": {

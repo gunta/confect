@@ -20,7 +20,7 @@ import { Array, Effect, Either, pipe, Schema } from "effect";
 import type {
   BaseDatabaseReader,
   IndexFieldTypesForEq,
-} from "@gunta/confect-core/Types";
+} from "@confect/core/Types";
 import type * as DataModel from "./DataModel";
 import * as Document from "./Document";
 import * as OrderedQuery from "./OrderedQuery";

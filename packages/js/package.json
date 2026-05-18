@@ -1,5 +1,5 @@
 {
-  "name": "@gunta/confect-js",
+  "name": "@confect/js",
   "version": "7.0.0",
   "description": "JavaScript client bindings for any JS runtime",
   "repository": {
@@ -57,7 +57,7 @@
     "vitest": "3.2.4"
   },
   "peerDependencies": {
-    "@gunta/confect-core": "workspace:*",
+    "@confect/core": "workspace:*",
     "convex": "^1.39.0",
     "effect": "4.0.0-beta.67"
   },

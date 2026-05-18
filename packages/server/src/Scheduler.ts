@@ -1,4 +1,4 @@
-import { Ref } from "@gunta/confect-core";
+import { Ref } from "@confect/core";
 import type { Scheduler as ConvexScheduler } from "convex/server";
 import { Context, DateTime, Duration, Effect, Layer } from "effect";
 
@@ -38,7 +38,7 @@ const make = (scheduler: ConvexScheduler) => ({
 });
 
 export const Scheduler = Context.Service<ReturnType<typeof make>>(
-  "@gunta/confect-server/Scheduler",
+  "@confect/server/Scheduler",
 );
 export type Scheduler = typeof Scheduler.Identifier;
 

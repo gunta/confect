@@ -1,4 +1,4 @@
-import { GenericId } from "@gunta/confect-core";
+import { GenericId } from "@confect/core";
 import { describe, expect, expectTypeOf, it } from "@effect/vitest";
 import {
   defineTable,

@@ -1,4 +1,4 @@
-import * as Ref from "@gunta/confect-core/Ref";
+import * as Ref from "@confect/core/Ref";
 import { ConvexHttpClient } from "convex/browser";
 import { Context, Effect, Layer, Schema } from "effect";
 
@@ -93,7 +93,7 @@ const make = (
  * A Confect client which uses HTTP to communicate with your Convex backend. Works in any JS runtime that supports `fetch`. Wraps [ConvexHttpClient](https://docs.convex.dev/api/classes/browser.ConvexHttpClient).
  */
 export const HttpClient = Context.Service<ReturnType<typeof make>>(
-  "@gunta/confect-js/HttpClient",
+  "@confect/js/HttpClient",
 );
 
 export type HttpClient = typeof HttpClient.Identifier;
