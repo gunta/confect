@@ -108,7 +108,7 @@ interface Call {
   readonly args: unknown;
 }
 
-const WebSocketClientSpy = Context.GenericTag<{
+const WebSocketClientSpy = Context.Service<{
   readonly queryCalls: MutableRef.Ref<ReadonlyArray<Call>>;
   readonly mutationCalls: MutableRef.Ref<ReadonlyArray<Call>>;
   readonly actionCalls: MutableRef.Ref<ReadonlyArray<Call>>;
@@ -296,7 +296,7 @@ describe("WebSocketClient", () => {
   });
 });
 
-class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
   id: Schema.String,
 }) {}
 

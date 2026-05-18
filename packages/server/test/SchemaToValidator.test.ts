@@ -26,7 +26,7 @@ describe(compileAst, () => {
         const schema = Schema.Any;
         const validator = v.any();
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -38,7 +38,7 @@ describe(compileAst, () => {
         const schema = Schema.Literal("LiteralString");
         const validator = v.literal("LiteralString");
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -50,7 +50,7 @@ describe(compileAst, () => {
         const schema = Schema.Literal("LiteralString", 1);
         const validator = v.union(v.literal("LiteralString"), v.literal(1));
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -62,7 +62,7 @@ describe(compileAst, () => {
         const schema = Schema.Boolean;
         const validator = v.boolean();
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -74,7 +74,7 @@ describe(compileAst, () => {
         const schema = Schema.String;
         const validator = v.string();
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -86,7 +86,7 @@ describe(compileAst, () => {
         const schema = Schema.Number;
         const validator = v.float64();
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -98,7 +98,7 @@ describe(compileAst, () => {
         const schema = Schema.Struct({});
         const validator = v.object({});
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -113,7 +113,7 @@ describe(compileAst, () => {
         });
         const validator = v.object({ foo: v.string(), bar: v.float64() });
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -123,12 +123,12 @@ describe(compileAst, () => {
     effect("object with optional field (exact)", () =>
       Effect.gen(function* () {
         const schema = Schema.Struct({
-          foo: Schema.optionalWith(Schema.String, { exact: true }),
+          foo: Schema.optionalKey(Schema.String),
         });
 
         const validator = v.object({ foo: v.optional(v.string()) });
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -143,7 +143,7 @@ describe(compileAst, () => {
 
         const validator = v.object({ foo: v.optional(v.string()) });
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -163,7 +163,7 @@ describe(compileAst, () => {
           foo: v.object({ bar: v.object({ baz: v.string() }) }),
         });
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -185,7 +185,7 @@ describe(compileAst, () => {
           v.object({}),
         );
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -197,7 +197,7 @@ describe(compileAst, () => {
         const schema = Schema.Tuple(Schema.String);
         const validator = v.array(v.string());
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -209,7 +209,7 @@ describe(compileAst, () => {
         const schema = Schema.Tuple(Schema.String, Schema.Number);
         const validator = v.array(v.union(v.string(), v.float64()));
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(validator);
@@ -227,7 +227,7 @@ describe(compileAst, () => {
           v.union(v.string(), v.float64(), v.boolean()),
         );
         const compiledValidator = yield* compileAst(
-          Schema.encodedSchema(schema).ast,
+          Schema.toEncoded(schema).ast,
         );
 
         expect(compiledValidator).toStrictEqual(expectedValidator);
@@ -249,7 +249,7 @@ describe(compileAst, () => {
 
           const expectedValidator = v.any();
           const compiledValidator = yield* compileAst(
-            Schema.encodedSchema(Foo).ast,
+            Schema.toEncoded(Foo).ast,
           );
 
           expect(compiledValidator).toStrictEqual(expectedValidator);
@@ -267,7 +267,7 @@ describe(compileAst, () => {
 
           const expectedValidator = v.any();
           const compiledValidator = yield* compileAst(
-            Schema.encodedSchema(Foo).ast,
+            Schema.toEncoded(Foo).ast,
           );
 
           expect(compiledValidator).toStrictEqual(expectedValidator);
@@ -283,7 +283,7 @@ describe(compileAst, () => {
 
           const expectedValidator = v.any();
           const compiledValidator = yield* compileAst(
-            Schema.encodedSchema(Foo).ast,
+            Schema.toEncoded(Foo).ast,
           );
 
           expect(compiledValidator).toStrictEqual(expectedValidator);
@@ -300,7 +300,7 @@ describe(compileAst, () => {
 
           const expectedValidator = v.any();
           const compiledValidator = yield* compileAst(
-            Schema.encodedSchema(Foo).ast,
+            Schema.toEncoded(Foo).ast,
           );
 
           expect(compiledValidator).toStrictEqual(expectedValidator);
@@ -321,7 +321,7 @@ describe(compileAst, () => {
 
           const expectedValidator = v.any();
           const compiledValidator = yield* compileAst(
-            Schema.encodedSchema(Foo).ast,
+            Schema.toEncoded(Foo).ast,
           );
 
           expect(compiledValidator).toStrictEqual(expectedValidator);
@@ -340,7 +340,7 @@ describe(compileAst, () => {
         });
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -362,7 +362,7 @@ describe(compileAst, () => {
         });
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -380,7 +380,7 @@ describe(compileAst, () => {
         const schema = Schema.Union(Schema.String, Schema.Undefined);
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -398,7 +398,7 @@ describe(compileAst, () => {
         });
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -414,7 +414,7 @@ describe(compileAst, () => {
         const schema = Schema.Tuple();
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -428,7 +428,7 @@ describe(compileAst, () => {
         const schema = Schema.Tuple(Schema.optionalElement(Schema.String));
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -442,7 +442,7 @@ describe(compileAst, () => {
         const schema = Schema.Undefined;
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -460,7 +460,7 @@ describe(compileAst, () => {
         const schema = Schema.instanceOf(Klass);
 
         const exit = yield* Effect.exit(
-          compileAst(Schema.encodedSchema(schema).ast),
+          compileAst(Schema.toEncoded(schema).ast),
         );
 
         expect(exit).toStrictEqual(
@@ -712,7 +712,7 @@ describe(compileSchema, () => {
       type ExpectedValidator = typeof expectedValidator;
 
       const schema = Schema.Struct({
-        userId: Schema.optionalWith(GenericId("users"), { exact: true }),
+        userId: Schema.optionalKey(GenericId("users")),
       });
       const compiledValidator = compileSchema(schema);
       type CompiledValidator = typeof compiledValidator;
@@ -1404,11 +1404,11 @@ describe(compileTableSchema, () => {
     expect(compiledValidator).toStrictEqual(expectedValidator);
   });
 
-  test("succeeds if provided Schema is Schema.optionalWith(…, { exact: true })", () => {
+  test("succeeds if provided Schema is Schema.optionalKey(…)", () => {
     const compiledValidator = compileTableSchema(
       Schema.Struct({
         text: Schema.String,
-        userId: Schema.optionalWith(GenericId("users"), { exact: true }),
+        userId: Schema.optionalKey(GenericId("users")),
       }),
     );
 
@@ -1441,7 +1441,7 @@ describe(compileTableSchema, () => {
   });
 
   test("fails if provided Schema requires context", () => {
-    expectTypeOf<Schema.Schema.AnyNoContext & Schema.Struct<any>>().toExtend<
+    expectTypeOf<Schema.Codec<any, any, never, never> & Schema.Struct<any>>().toExtend<
       Parameters<typeof compileTableSchema>[0]
     >();
 

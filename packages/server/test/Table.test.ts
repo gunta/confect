@@ -20,7 +20,7 @@ describe("Table", () => {
           exact: true,
         }),
         text: Schema.String.pipe(Schema.maxLength(100)),
-        tag: Schema.optionalWith(Schema.String, { exact: true }),
+        tag: Schema.optionalKey(Schema.String),
         author: Schema.optionalWith(
           Schema.Struct({
             role: Schema.Literal("admin", "user"),

@@ -15,7 +15,7 @@ vi.mock("convex/react", () => ({
   useAction: (...args: unknown[]) => useConvexActionMock(...args),
 }));
 
-class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
   id: Schema.String,
 }) {}
 
