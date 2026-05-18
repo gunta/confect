@@ -163,7 +163,7 @@ describe("Error type extraction", () => {
   });
 
   test("error schema extracts the error type", () => {
-    class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+    class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
       id: Schema.String,
     }) {}
 
@@ -178,10 +178,10 @@ describe("Error type extraction", () => {
   });
 
   test("union error schema extracts the union type", () => {
-    class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+    class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
       id: Schema.String,
     }) {}
-    class Forbidden extends Schema.TaggedError<Forbidden>()("Forbidden", {
+    class Forbidden extends Schema.TaggedErrorClass<Forbidden>()("Forbidden", {
       reason: Schema.String,
     }) {}
 
@@ -189,7 +189,7 @@ describe("Error type extraction", () => {
       name: "remove",
       args: Schema.Struct({ id: Schema.String }),
       returns: Schema.Void,
-      error: Schema.Union(NotFound, Forbidden),
+      error: Schema.Union([NotFound, Forbidden]),
     });
     type Ref_ = Ref.FromFunctionSpec<typeof _spec>;
     expectTypeOf<Ref.Error<Ref_>>().toEqualTypeOf<NotFound | Forbidden>();
@@ -215,7 +215,7 @@ describe("isConvexError", () => {
 
 describe("maybeDecodeErrorSync", () => {
   test("decodes ConvexError when error schema is present", () => {
-    class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+    class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
       id: Schema.String,
     }) {}
 
@@ -250,7 +250,7 @@ describe("maybeDecodeErrorSync", () => {
   });
 
   test("returns non-ConvexError errors unchanged", () => {
-    class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+    class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
       id: Schema.String,
     }) {}
 
@@ -269,7 +269,7 @@ describe("maybeDecodeErrorSync", () => {
 
 describe("decodeError", () => {
   test("decodes error data using the error schema", async () => {
-    class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+    class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
       id: Schema.String,
     }) {}
 
@@ -306,7 +306,7 @@ describe("decodeError", () => {
 });
 
 describe("decodeErrorOrElse", () => {
-  class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+  class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
     id: Schema.String,
   }) {}
 
@@ -361,7 +361,7 @@ describe("decodeErrorOrElse", () => {
 
 describe("hasErrorSchema", () => {
   test("returns true for Confect ref with an error schema", () => {
-    class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+    class NotFound extends Schema.TaggedErrorClass<NotFound>()("NotFound", {
       id: Schema.String,
     }) {}
 

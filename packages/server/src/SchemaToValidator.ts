@@ -389,23 +389,17 @@ const handleDeclaration = (
   declaration: SchemaAST.Declaration,
 ): Effect.Effect<Validator<any, any, any>, UnsupportedSchemaTypeError> =>
   Effect.gen(function* () {
-    const parser = declaration.run(declaration.typeParameters) as (
-      input: unknown,
-      self: SchemaAST.Declaration,
-      options: SchemaAST.ParseOptions,
-    ) => Effect.Effect<unknown, unknown>;
+    const rawParser = declaration.run(declaration.typeParameters);
+    const parser = (input: unknown): Effect.Effect<unknown, unknown> =>
+      rawParser(input, declaration, {}) as Effect.Effect<unknown, unknown>;
 
-    const arrayBufferResult = yield* Effect.exit(
-      parser(new ArrayBuffer(0), declaration, {}),
-    );
+    const arrayBufferResult = yield* Effect.exit(parser(new ArrayBuffer(0)));
 
     if (Exit.isSuccess(arrayBufferResult)) {
       return v.bytes();
     }
 
-    const uint8ArrayResult = yield* Effect.exit(
-      parser(new Uint8Array(0), declaration, {}),
-    );
+    const uint8ArrayResult = yield* Effect.exit(parser(new Uint8Array(0)));
 
     if (Exit.isSuccess(uint8ArrayResult)) {
       return v.bytes();

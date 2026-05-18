@@ -52,7 +52,7 @@ describe("extendWithSystemFields", () => {
       url: Schema.String,
     });
 
-    const ItemSchema = Schema.Union(NoteSchema, ImageSchema);
+    const ItemSchema = Schema.Union([NoteSchema, ImageSchema]);
 
     const ExtendedItemSchema = SystemFields.extendWithSystemFields(
       "items",
