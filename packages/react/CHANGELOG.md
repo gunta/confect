@@ -1,5 +1,16 @@
 # @confect/react
 
+## 8.0.0
+
+### Minor Changes
+
+- 4bb2722: Bump Effect ecosystem to latest. `@effect/platform` is now `^0.96.1` and `@effect/platform-node` is now `^0.106.0` in `@confect/server`'s peer dependencies; `effect` peer is now `^3.21.2` across packages. Consumers must upgrade `@effect/platform`, `@effect/platform-node`, and `effect` in lockstep when bumping `@confect/server`.
+
+### Patch Changes
+
+- Updated dependencies [4bb2722]
+  - @confect/core@8.0.0
+
 ## 7.0.0
 
 ### Major Changes
