@@ -29,6 +29,8 @@ c622326 chore: rename @confect/* -> @gunta/confect-* and bump deps (was reverted
 2aff932 revert: keep @confect/* package names (no rename)
 6c061b6 chore: add @effect/vitest@4.0.0-beta.67 dev dep
 6ab7744 test(core): port Ref.test.ts and SystemFields.test.ts
+9932d39 feat(server): port SchemaToValidator to Effect 4
+f93a063 docs: add RESUME.md handoff
 <server agent wip commit if any>
 ```
 
