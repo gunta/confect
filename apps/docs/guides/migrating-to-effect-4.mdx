@@ -1,579 +1,475 @@
 ---
 icon: "arrow-up-right"
 title: "Migrating to Effect 4"
-description: "Upgrade your Confect app from Effect 3 to the Effect 4 beta — Schema, Stream, Layer, Result, and Context all change shape."
+description: "What changes in your Confect app when you upgrade from the stable `latest` channel to the Effect 4 prerelease `@next` channel."
 ---
 
-## Overview
-
-Confect's `next` channel tracks the [Effect 4 beta](https://github.com/Effect-TS/effect-smol). This guide walks every breaking change that Confect packages relay to your app code.
-
-<Warning>
-  Effect 4 is still in beta. Confect's `next` channel is pinned to `effect@4.0.0-beta.67`. Expect minor renames to land until Effect 4 stabilizes; we will note them in subsequent prereleases.
-</Warning>
+This guide is for **Confect users**. It covers only what changes in *your* code when you switch from `@confect/*@latest` (Effect 3) to `@confect/*@next` (Effect 4 beta).
 
 <Note>
-  Effect's own migration material is the canonical reference for non-Confect APIs:
+  Effect 4 itself is a separate project with its own migration guide. For the full v3 → v4 Effect API rename table (Schema, Stream, Layer, Result, Context, AST tags, etc.), see the **[official Effect 4 Schema migration guide](https://github.com/Effect-TS/effect-smol/blob/main/migration/schema.md)** and the [d.ts files](https://github.com/Effect-TS/effect-smol/tree/main/packages/effect/src) on `effect-smol`.
 
-  - [Effect 4 Schema migration guide](https://github.com/Effect-TS/effect-smol/blob/main/migration/schema.md)
-  - Effect 4 d.ts ground truth: `node_modules/effect/dist/{Schema,SchemaAST,Effect,Stream,Layer,Result,Cause,Queue,Context,ConfigProvider,Clock}.d.ts`
-
-  This guide focuses on the patterns Confect users hit most often.
+  This page assumes you've skimmed those and want to know specifically: **what's different about *Confect* on the `@next` channel?**
 </Note>
 
-Confect prereleases ship from the [`effect4-modernize`](https://github.com/rjdellecese/confect/tree/effect4-modernize) branch under the npm `next` dist-tag, alongside Effect 3 on `latest`. When Effect 4 stabilizes, the branch exits prerelease mode and merges into `main`.
+## TL;DR
+
+If you pin `effect@4.0.0-beta.67`, `convex@^1.39.0`, and `@confect/*@next`, the only Confect-shaped things that change in your app are:
+
+1. **React hooks** return `Promise<Result<A, E>>` instead of `Promise<Either<A, E>>` when the ref has a typed `error` schema. Replace `Either.match({ onLeft, onRight })` with `Result.match({ onFailure, onSuccess })`.
+2. **Error classes** use `Schema.TaggedErrorClass` (was `Schema.TaggedError`) — one symbol rename, same shape.
+3. **Schema generics** on Confect APIs accept `Schema.Codec<A, I, never, never>` (was `Schema.Schema<A, I>`). Inline `Schema.Struct(...)` calls don't change.
+4. **System-field IDs** are `Schema.Codec<GenericId<TableName>, string, never, never>` (was a one-generic `Schema.Schema`). You almost never write this by hand.
+5. **`ctx.runQuery/runMutation/runAction`** errors flow as `Schema.SchemaError` instead of `ParseResult.ParseError`.
+6. **Storage URL helpers** decode through `Schema.URLFromString`. If you previously imported `Schema.URL` for the string-accepting behaviour, switch.
+
+Everything else is either unchanged or sits behind the same Confect helper as before.
 
 ## Install
 
 <CodeGroup>
 
 ```bash pnpm
-pnpm add @confect/server@next @confect/core@next effect@4.0.0-beta.67 convex@^1.39.0
-pnpm add -D @confect/test@next convex-test@^0.0.53 @effect/vitest@4.0.0-beta.67
+pnpm add @confect/core@next @confect/server@next @confect/react@next \
+  effect@4.0.0-beta.67 convex@^1.39.0
+pnpm add -D @confect/test@next convex-test@^0.0.53 \
+  @effect/vitest@4.0.0-beta.67
 ```
 
 ```bash npm
-npm install @confect/server@next @confect/core@next effect@4.0.0-beta.67 convex@^1.39.0
-npm install -D @confect/test@next convex-test@^0.0.53 @effect/vitest@4.0.0-beta.67
+npm install @confect/core@next @confect/server@next @confect/react@next \
+  effect@4.0.0-beta.67 convex@^1.39.0
+npm install -D @confect/test@next convex-test@^0.0.53 \
+  @effect/vitest@4.0.0-beta.67
 ```
 
 ```bash bun
-bun add @confect/server@next @confect/core@next effect@4.0.0-beta.67 convex@^1.39.0
-bun add -D @confect/test@next convex-test@^0.0.53 @effect/vitest@4.0.0-beta.67
+bun add @confect/core@next @confect/server@next @confect/react@next \
+  effect@4.0.0-beta.67 convex@^1.39.0
+bun add -D @confect/test@next convex-test@^0.0.53 \
+  @effect/vitest@4.0.0-beta.67
 ```
 
 </CodeGroup>
 
 <Tip>
-  In a pnpm monorepo, pin `effect` everywhere with `pnpm.overrides` so each package resolves the same beta. Otherwise transitively pulled v3 copies will collide with v4 types.
+  In a monorepo, pin `effect` in `pnpm.overrides` so every package resolves the same beta:
 
   ```jsonc package.json
   {
     "pnpm": {
       "overrides": {
-        "effect": "4.0.0-beta.67"
+        "effect": "4.0.0-beta.67",
+        "convex": "1.39.1"
       }
     }
   }
   ```
 </Tip>
 
-## Why upgrade
+<Warning>
+  `@confect/cli` is **not** on `@next` yet — its dependencies (`@effect/cli`, `@effect/platform-node`, `@effect/printer`) are Effect 3-only. Until the CLI port lands, keep `@confect/cli@^7` (Effect 3) for `confect codegen` and `confect dev`. The generated files it produces are compatible with the `@next` runtime.
 
-Effect 4 unifies the surface that v3 spread across companion packages. For Confect users the immediate wins are:
+  Same for `@confect/server`'s HTTP API surface — stubbed pending a full rewrite against `effect/unstable/{http,httpapi}`. If you mount Confect HTTP routes, stay on `@latest` until the rewrite ships.
+</Warning>
 
-- **`effect/unstable/*` consolidation** — `@effect/platform`, `@effect/cluster`, `@effect/rpc`, `@effect/sql`, `@effect/workflow`, `@effect/experimental`, `@effect/typeclass`, `@effect/vitest`, and `@effect/cli` have all folded into the main `effect` package under `effect/unstable/*`. One install, one version pin.
-- **`Result` replaces `Either`** — narrower API surface, friendlier accessor names (`.success` / `.failure`), and `Effect.result` ergonomics.
-- **Unified `Stream.callback`** — the v3 family of `Stream.async{,Scoped,Effect,Push}` collapses into a single function that takes a `Queue`. Confect's WebSocket client is already on this and you can drop the old `unwrapScoped` boilerplate.
-- **Simpler service shape** — `Context.Service<Self, Shape>()(name)` replaces the v3 `Effect.Service` class block and the `Context.GenericTag` factory. One canonical form.
-- **Typed errors via `Schema.TaggedErrorClass`** — replaces `Schema.TaggedError`. Same ergonomics, less footgun around class generics.
+## Each Confect surface, one at a time
 
-## Breaking changes — Schema API
+The rest of this guide walks every public Confect surface and tells you whether it changes or not. Most don't.
 
-| v3 | v4 | Notes |
-|---|---|---|
-| `Schema.Schema<A, I>` | `Schema.Codec<A, I, never, never>` | Two extra type parameters — `DecodingServices` and `EncodingServices`. Most call sites only ever care about the first two. |
-| `Schema.Schema.AnyNoContext` | `Schema.Codec<any, any, never, never>` | The `AnyNoContext` shorthand is gone. |
-| `Schema.Schema.Type<typeof X>` | `typeof X.Type` | Schemas now expose `.Type` and `.Encoded` directly. |
-| `Schema.Schema.Encoded<typeof X>` | `typeof X.Encoded` | — |
-| `Schema.encode(s)(x)` | `Schema.encodeEffect(s)(x)` | The bare `encode` / `decode` were renamed to flag that they return `Effect`. |
-| `Schema.decode(s)(x)` | `Schema.decodeEffect(s)(x)` | — |
-| `Schema.encodedSchema(s)` | `Schema.toEncoded(s)` | — |
-| `Schema.typeSchema(s)` | `Schema.toType(s)` | — |
-| `Schema.optionalWith(s, { exact: true })` | `Schema.optionalKey(s)` | The `exact` overload is now the dedicated function. |
-| `Schema.extend(a, b)` | `a.pipe(Schema.fieldsAssign(b.fields))` | Operates on `fields` instead of the schema as a whole. |
-| `Schema.Union(a, b, c)` | `Schema.Union([a, b, c])` | Array form only. |
-| `Schema.Literal("a", "b")` | `Schema.Literals(["a", "b"])` | Plural name + array form. `Schema.Literal` still exists for single literals. |
-| `Schema.TaggedError` | `Schema.TaggedErrorClass` | Same ergonomics, requires the explicit `Self` generic. |
-| `Schema.URL` (string-accepting) | `Schema.URLFromString` | In v4, `Schema.URL` is `instanceOf<globalThis.URL>`. Use `URLFromString` for the v3 behaviour. |
-| `Schema.annotations({...})` | `Schema.annotate({...})` | — |
-| `ParseResult.ParseError` | `Schema.SchemaError` | The whole `ParseResult` module is no longer exported. |
-| `Symbol.for("X")` annotation key | string key like `"@confect/<pkg>/X"` | Annotation keys must be strings. |
+### Table definitions
 
-### Worked example — function args type
+**No change.** `Table.make("notes", Schema.Struct({...}))`, indexes, search indexes, vector indexes — all the same.
 
-The single most common Confect change is dropping `Schema.Schema.Type` for the inline `.Type` accessor.
+```ts
+import { Table } from "@confect/server";
+import { Schema } from "effect";
+
+export const Notes = Table.make(
+  "notes",
+  Schema.Struct({
+    text: Schema.String,
+    authorId: Schema.optional(Schema.String),
+  }),
+)
+  .index("by_author", ["authorId"])
+  .searchIndex("text", { searchField: "text" });
+```
+
+The one type-level change: `Table.make`'s `TableSchema` bound is now `Schema.Codec<any, any, never, never>` (was `Schema.Schema.AnyNoContext`). You only see this in type errors if you constrained `Table.make` generically in your own code.
+
+### Polymorphic tables (new)
+
+`extendWithSystemFields` now accepts a `Schema.Union` of structs in addition to a single `Schema.Struct`. You couldn't write this in v3.
+
+```ts
+import { Table } from "@confect/server";
+import { Schema } from "effect";
+
+export const Events = Table.make(
+  "events",
+  Schema.Union([
+    Schema.Struct({ kind: Schema.Literal("login"), userId: Schema.String }),
+    Schema.Struct({ kind: Schema.Literal("logout"), userId: Schema.String }),
+  ]),
+);
+```
+
+System fields (`_id`, `_creationTime`) are added to *each* member of the union.
+
+### Schema-shaped function args / returns / errors
+
+**No change** in how you write them. The thing that changes is the type signature Confect uses internally.
+
+```ts
+import { FunctionSpec } from "@confect/core";
+import { Schema } from "effect";
+
+export const notes = GroupSpec.make("notes").addFunction(
+  FunctionSpec.publicQuery({
+    name: "getOrFail",
+    args: Schema.Struct({ noteId: Notes.Id }),
+    returns: Notes.Doc,
+    error: NoteNotFound, // see "Typed errors" below
+  }),
+);
+```
+
+If you wrote a *generic helper* that took a Confect spec, you'll see one change:
+
+```diff
+- function takeSpec<A, I>(spec: { args: Schema.Schema<A, I> }) { ... }
++ function takeSpec<A, I>(spec: { args: Schema.Codec<A, I, never, never> }) { ... }
+```
+
+### Typed errors
+
+`Schema.TaggedError` was renamed to `Schema.TaggedErrorClass`. Same ergonomics, same runtime behaviour, different symbol.
 
 <CodeGroup>
 
-```ts v3
+```ts latest
 import { Schema } from "effect";
 
-const Args = Schema.Struct({ id: Schema.String });
-
-const handler = (a: Schema.Schema.Type<typeof Args>) =>
-  Effect.succeed(null);
-```
-
-```ts v4
-import { Schema } from "effect";
-
-const Args = Schema.Struct({ id: Schema.String });
-
-const handler = (a: typeof Args.Type) =>
-  Effect.succeed(null);
-```
-
-</CodeGroup>
-
-### Worked example — typed errors
-
-`Schema.TaggedError` becomes `Schema.TaggedErrorClass`. The class name appears twice (once for the generic, once for the tag) — that's intentional and lets the class reflect a sound `Self` type.
-
-<CodeGroup>
-
-```ts v3
-import { Schema } from "effect";
-
-export class NoUserIdentityFoundError extends Schema.TaggedError<NoUserIdentityFoundError>()(
-  "NoUserIdentityFoundError",
-  {},
+export class NoteNotFound extends Schema.TaggedError<NoteNotFound>()(
+  "NoteNotFound",
+  { noteId: Notes.Id },
 ) {}
 ```
 
-```ts v4
+```ts next
 import { Schema } from "effect";
 
-export class NoUserIdentityFoundError extends Schema.TaggedErrorClass<NoUserIdentityFoundError>()(
-  "NoUserIdentityFoundError",
-  {},
-) {
-  get message(): string {
-    return "No user identity found";
-  }
-}
+export class NoteNotFound extends Schema.TaggedErrorClass<NoteNotFound>()(
+  "NoteNotFound",
+  { noteId: Notes.Id },
+) {}
 ```
 
 </CodeGroup>
 
-### Worked example — extending struct fields
+Everything around typed errors — declaring `error:` on `FunctionSpec`, recovering with `Effect.mapError`, observing them in `Ref.runWithCodec` / `useMutation` / `HttpClient` / `WebSocketClient` — works the same way.
 
-`Schema.extend(a, b)` is removed in favour of acting on `fields` directly.
+### React hooks (`useQuery`, `useMutation`, `useAction`)
 
-<CodeGroup>
-
-```ts v3
-const Base = Schema.Struct({ id: Schema.String });
-const Extended = Schema.extend(
-  Base,
-  Schema.Struct({ name: Schema.String }),
-);
-```
-
-```ts v4
-const Base = Schema.Struct({ id: Schema.String });
-const Extended = Base.pipe(
-  Schema.fieldsAssign({ name: Schema.String }),
-);
-```
-
-</CodeGroup>
-
-## Breaking changes — SchemaAST
-
-If you walked the AST in v3 — say, in a custom validator — most tag names changed.
-
-| v3 | v4 |
-|---|---|
-| `TypeLiteral` | `Objects` |
-| `TupleType` | `Arrays` |
-| `StringKeyword` | `String` |
-| `NumberKeyword` | `Number` |
-| `BooleanKeyword` | `Boolean` |
-| `BigIntKeyword` | `BigInt` |
-| `UnknownKeyword` | `Unknown` |
-| `AnyKeyword` | `Any` |
-| `SymbolKeyword` | `Symbol` |
-| `UndefinedKeyword` | `Undefined` |
-| `VoidKeyword` | `Void` |
-| `NeverKeyword` | `Never` |
-| `Enums` | `Enum` |
-| `SchemaAST.isUndefinedKeyword` | `SchemaAST.isUndefined` |
-| `SchemaAST.getAnnotation<T>(key)(ast)` returning `Option` | `Option.fromNullishOr(SchemaAST.resolveAt<T>(key)(ast))` |
-
-`Null` is now its own tag (was bundled under literals in v3).
-
-## Breaking changes — Effect / Stream / Layer / Result / Context
-
-| v3 | v4 | Notes |
-|---|---|---|
-| `Context.GenericTag<T>(name)` | `Context.Service<Shape>(name)` | One-stage form for function-style keys. |
-| `class Foo extends Effect.Tag("Foo")<Foo, Shape>() {}` | `class Foo extends Context.Service<Foo, Shape>()("Foo") {}` | Two-stage form for class-style services. |
-| `Effect.Service<Self>()(name, { effect, dependencies, accessors })` | `Context.Service<Self, Shape>()(name)` + `Layer.effect(tag, eff).pipe(Layer.provide(deps))` | The all-in-one v3 helper splits into a tag and a layer. |
-| `Context.Reference` (class extension) | `Context.Reference<Service>(key, { defaultValue })` (function form) | — |
-| `Effect.Effect.Success<T>` | `Effect.Success<T>` | Same for `.Error<T>` and `.Context<T>`. |
-| `Effect.either(eff)` | `Effect.result(eff)` | Returns `Effect<Result<A, E>>` instead of `Effect<Either<E, A>>`. |
-| `Effect.catchAll(f)` | `Effect.matchEffect({ onFailure, onSuccess })` | `catchAll` is removed in v4. |
-| `Effect.catchTag("ParseError", ...)` | `Effect.catchTag("SchemaError", ...)` | The tag string changed alongside the type. |
-| `Effect.dieMessage(msg)` | `Effect.die(msg)` | — |
-| `Effect.withClock(clock)(eff)` | `Effect.provideService(Clock.Clock, clock)(eff)` | — |
-| `Effect.if` | ternary or `Effect.flatMap` | The helper is removed. |
-| `Clock.make()` | inline custom `Clock` literal | No factory; method names also flipped to `…Unsafe` suffix (`currentTimeMillisUnsafe`). |
-| `Stream.asyncScoped((emit) => ...)` | `Stream.callback((queue) => Effect)` | Single unified API. |
-| `Stream.unwrapScoped(eff)` | `Stream.unwrap(eff)` | Scope is part of the type signature. |
-| `emit.single(x)` | `Queue.offerUnsafe(queue, x)` | — |
-| `emit.fail(e)` | `Queue.failCauseUnsafe(queue, Cause.fail(e))` | — |
-| `Stream.runCollect` returns `Chunk<A>` | returns `Array<A>` | Drop the `Chunk.toArray` wrapper at call sites. |
-| `Layer.scoped(tag, eff)` | `Layer.effect(tag, eff)` | v4 auto-manages `Scope` in the type. |
-| `Layer.setConfigProvider(p)` | `Layer.succeed(ConfigProvider.ConfigProvider, p)` | — |
-| `Layer.map(layer, f)` | `Layer.effect(tag, Effect.map(Effect.service(oldTag), f)).pipe(Layer.provide(layer))` | — |
-| `Either` (module) | `Result` | Imports + branch names change. |
-| `Either.getOrThrow(e)` | `Result.getOrThrow(r)` | — |
-| `Either.match({ onLeft, onRight })` | `Result.match({ onFailure, onSuccess })` | Accessor names on the values change too: `.left`/`.right` → `.failure`/`.success`. |
-| `Option.fromNullable` | `Option.fromNullishOr` | — |
-| `Hash.cached(this, value)` | inline `Hash.combine(...)` (no caching) | — |
-| `Order.number` | `Order.Number` | All built-in `Order` instances capitalised. |
-| `Ref.unsafeMake` | `Ref.makeUnsafe` | The unsafe affix moved to the suffix everywhere. |
-| `Array.isEmptyReadonlyArray(arr)` / `Array.isEmptyArray(arr)` | `arr.length === 0` | — |
-
-### Worked example — Result replaces Either
-
-The accessors changed from `.left` / `.right` to `.failure` / `.success`. Narrow with `Result.isSuccess` / `Result.isFailure`.
+**This is the one user-facing API shape change.** When a ref declares an `error` schema, `useMutation` and `useAction` resolve to `Promise<Result<A, E>>` on `@next` instead of `Promise<Either<A, E>>` on `@latest`.
 
 <CodeGroup>
 
-```ts v3
-import { Effect, Either } from "effect";
+```tsx latest
+import { useMutation } from "@confect/react";
+import { Either } from "effect";
 
-const program = Effect.either(myEffect).pipe(
-  Effect.map((either) =>
-    Either.match(either, {
-      onLeft: (e) => `failed: ${e.message}`,
-      onRight: (value) => `ok: ${value}`,
-    }),
-  ),
-);
-```
+const remove = useMutation(api.notes.remove);
 
-```ts v4
-import { Effect, Result } from "effect";
+const result = await remove({ noteId });
 
-const program = Effect.result(myEffect).pipe(
-  Effect.map((result) =>
-    Result.match(result, {
-      onFailure: (e) => `failed: ${e.message}`,
-      onSuccess: (value) => `ok: ${value}`,
-    }),
-  ),
-);
-
-// Or with manual narrowing:
-const inspected = Effect.result(myEffect).pipe(
-  Effect.map((result) =>
-    Result.isSuccess(result) ? result.success : null,
-  ),
-);
-```
-
-</CodeGroup>
-
-### Worked example — Stream.callback
-
-`Stream.asyncScoped` → `Stream.callback`. The shape moves from an imperative `emit` object to a `Queue` you push to. This pattern is straight from `@confect/js`'s WebSocket client.
-
-<CodeGroup>
-
-```ts v3
-import { Effect, Stream } from "effect";
-
-const subscribe = Stream.unwrapScoped(
-  Effect.gen(function* () {
-    return Stream.asyncScoped<Item, MyError>((emit) =>
-      Effect.gen(function* () {
-        const unsubscribe = source.onUpdate(
-          (item) => emit.single(item),
-          (err) => emit.fail(err),
-        );
-        yield* Effect.addFinalizer(() =>
-          Effect.sync(() => unsubscribe()),
-        );
-      }),
-    );
-  }),
-);
-```
-
-```ts v4
-import { Cause, Effect, Queue, Stream } from "effect";
-
-const subscribe = Stream.unwrap(
-  Effect.gen(function* () {
-    return Stream.callback<Item, MyError>((queue) =>
-      Effect.gen(function* () {
-        const unsubscribe = source.onUpdate(
-          (item) => {
-            Queue.offerUnsafe(queue, item);
-          },
-          (err) => {
-            Queue.failCauseUnsafe(queue, Cause.fail(err));
-          },
-        );
-        yield* Effect.addFinalizer(() =>
-          Effect.sync(() => unsubscribe()),
-        );
-      }),
-    );
-  }),
-);
-```
-
-</CodeGroup>
-
-### Worked example — services and layers
-
-The `Effect.Service` class block is gone. Express a service as a `Context.Service` tag plus a `Layer.effect` (or `Layer.succeed` for a constant value).
-
-<CodeGroup>
-
-```ts v3
-import { Context, Effect, Layer } from "effect";
-
-export class Auth extends Effect.Service<Auth>()("@confect/server/Auth", {
-  effect: Effect.gen(function* () {
-    return {
-      getUserIdentity: Effect.promise(() => auth.getUserIdentity()),
-    };
-  }),
-}) {}
-```
-
-```ts v4
-import { Context, Effect, Layer } from "effect";
-import type { Auth as ConvexAuth } from "convex/server";
-
-const make = (auth: ConvexAuth) => ({
-  getUserIdentity: Effect.promise(() => auth.getUserIdentity()),
+Either.match(result, {
+  onLeft: (error) => alert(`Failed: ${error._tag}`),
+  onRight: (value) => console.log("OK", value),
 });
-
-export class Auth extends Context.Service<
-  Auth,
-  ReturnType<typeof make>
->()("@confect/server/Auth") {}
-
-export const layer = (auth: ConvexAuth) =>
-  Layer.succeed(Auth, make(auth));
 ```
 
-</CodeGroup>
+```tsx next
+import { useMutation } from "@confect/react";
+import { Result } from "effect";
 
-### Worked example — `Effect.catchAll` is gone
+const remove = useMutation(api.notes.remove);
 
-Use `Effect.matchEffect` with both branches when you need an effectful handler.
+const result = await remove({ noteId });
 
-<CodeGroup>
-
-```ts v3
-const program = doWork.pipe(
-  Effect.catchAll((error) => recover(error)),
-);
-```
-
-```ts v4
-const program = Effect.matchEffect(doWork, {
-  onFailure: (error) => recover(error),
-  onSuccess: (value) => Effect.succeed(value),
+Result.match(result, {
+  onFailure: (error) => alert(`Failed: ${error._tag}`),
+  onSuccess: (value) => console.log("OK", value),
 });
 ```
 
 </CodeGroup>
 
-### Worked example — providing a Clock
+Other accessor renames at the same time: `result.left` → `result.failure`, `result.right` → `result.success` after narrowing with `Result.isFailure` / `Result.isSuccess`.
 
-`Effect.withClock` is removed. Provide `Clock.Clock` via `Effect.provideService` instead.
+**`useQuery` does not change** — it still returns a `QueryResult<A, E>` with `Loading | Success | Failure` variants. The internal `Either.getOrThrow` call became `Result.getOrThrow`, but that's not visible at the call site.
 
-<CodeGroup>
+### `useQuery`'s `QueryResult`
 
-```ts v3
-const program = work.pipe(Effect.withClock(myClock));
+**No change.** `QueryResult.match({ onLoading, onSuccess, onFailure })` is the same; `Success` still exposes `.value`, `Failure` still exposes `.error`.
+
+```tsx
+import { QueryResult, useQuery } from "@confect/react";
+
+const result = useQuery(api.notes.get, { noteId });
+
+return QueryResult.match(result, {
+  onLoading: (skipped) => skipped ? null : <p>Loading…</p>,
+  onSuccess: (value) => <p>{value.text}</p>,
+  onFailure: (error) => <p>Error: {error._tag}</p>,
+});
 ```
 
-```ts v4
-import { Clock, Effect } from "effect";
+### `Ref.runWithCodec` and friends
 
-const program = work.pipe(Effect.provideService(Clock.Clock, myClock));
+**No change** at the call site. The internals migrated from `Schema.encode`/`Schema.decode` (v3 names) to `Schema.encodeEffect`/`Schema.decodeEffect`, and the error channel is now `Schema.SchemaError` instead of `ParseResult.ParseError`.
+
+If you handle `Ref.runWithCodec`'s error channel explicitly, swap the type name:
+
+```diff
+- ): Effect.Effect<Ref.Returns<Q>, Ref.Error<Q> | ParseResult.ParseError>
++ ): Effect.Effect<Ref.Returns<Q>, Ref.Error<Q> | Schema.SchemaError>
 ```
 
-</CodeGroup>
+This applies to `Ref.encodeArgs`, `Ref.decodeReturns`, `Ref.decodeError`, `Ref.runWithCodec`, and the `query`/`mutation`/`action` methods on `HttpClient` / `WebSocketClient` / `TestConfect`.
 
-### Worked example — `ConfigProvider`
+### Storage URLs
 
-`Layer.setConfigProvider` is gone — provide the reference directly.
+Confect's `StorageReader.getUrl(id)` decodes the URL string through a Schema. The Schema used to be `Schema.URL` (string-accepting). On `@next`, `Schema.URL` is `instanceOf<globalThis.URL>` — to decode a string Confect now uses `Schema.URLFromString`.
 
-<CodeGroup>
+If you held an `Effect.Effect<URL, …>` from `StorageReader.getUrl` you keep getting a `URL` instance — same result.
 
-```ts v3
-const layer = Layer.setConfigProvider(myProvider);
+If your own code parses storage URLs through `Schema.URL`, switch to `Schema.URLFromString`:
+
+```diff
+- pipe(stringValue, Schema.decodeEffect(Schema.URL))
++ pipe(stringValue, Schema.decodeEffect(Schema.URLFromString))
 ```
 
-```ts v4
-import { ConfigProvider, Layer } from "effect";
+### `ConvexConfigProvider`
 
-const layer = Layer.succeed(ConfigProvider.ConfigProvider, myProvider);
+**Same user-facing API**. `ConvexConfigProvider.make()` still returns a `ConfigProvider` you can layer in.
+
+Internally the v4 implementation snapshots `process.env` at construction time and delegates to `ConfigProvider.fromEnv({ env })`. This sidesteps [effect-smol#2143](https://github.com/Effect-TS/effect-smol/issues/2143), where Effect 4's default `ConfigProvider.fromEnv()` reads `import.meta.env` — which the Convex bundler can't statically analyze.
+
+If you provide a custom `ConfigProvider`, the v3 `Layer.setConfigProvider(provider)` is gone — provide it as a reference instead:
+
+```diff
+- Layer.setConfigProvider(myProvider)
++ Layer.succeed(ConfigProvider.ConfigProvider, myProvider)
 ```
 
-</CodeGroup>
-
-<Note>
-  Confect ships `ConvexConfigProvider.make()` for the Convex runtime. Effect 4's `ConfigProvider.fromEnv` defaults to `import.meta.env`, which the Convex bundler cannot statically analyse ([effect-smol#2143](https://github.com/Effect-TS/effect-smol/issues/2143)). The Confect helper passes an explicit `process.env` snapshot to side-step that.
-</Note>
-
-## Breaking changes — Convex
-
-| Item | Stable channel | `next` channel |
-|---|---|---|
-| `convex` peer | `^1.30.0` | `^1.39.0` |
-| `convex-test` dev | `^0.0.41` | `^0.0.53` |
-
-Convex 1.31–1.39 changes that affect Confect users:
-
-- **1.31** — explicit-table-id `db.get(table, id)` 4-arg variants. Confect's `DatabaseReader`/`DatabaseWriter` continue to pass through to the native API.
-- **1.32** — `PaginationOptions.maximumRowsRead` / `maximumBytesRead`, and a paginate filter callback. Both flow through Confect's `paginate` wrapper.
-- **1.36** — `ctx.meta.getFunctionMetadata`, `ctx.meta.getTransactionMetrics`.
-- **1.37** — `ctx.meta.getDeploymentMetadata`.
-- **1.38** — `ctx.meta.getRequestMetadata`.
-- **1.39** — typed env vars in `defineApp` / `defineComponent`.
-
-<Note>
-  The `ctx.meta.*` surfaces are not yet exposed as Confect Effect services. Follow-up — see the [tracking task](https://github.com/rjdellecese/confect/pulls).
-</Note>
-
-`convex-test` jumped from `0.0.41` to `^0.0.53`. The two notable internal changes:
-
-- **0.0.45** — replaced global state with `AsyncLocalStorage`-scoped state; `TestConvex<SpecificSchema>` now supports union types in inline calls.
-- **0.0.47** — isolated function-stack tracking between parallel calls (better component module resolution).
-
-Confect's `@confect/test` wrapper continues to work the same way.
-
-## Breaking changes — package surface
-
-Effect 4 folded several companion packages into `effect/unstable/*`. None of the following are part of Confect's `next` peer dependencies anymore:
-
-- `@effect/platform`, `@effect/platform-node`, `@effect/platform-node-shared`, `@effect/platform-bun`
-- `@effect/cluster`, `@effect/experimental`, `@effect/rpc`, `@effect/sql`, `@effect/workflow`
-- `@effect/typeclass`
-- `@effect/cli`, `@effect/printer`, `@effect/printer-ansi`
-- `@effect/vitest` (replaced by `@effect/vitest@4.0.0-beta.67`)
-
-If your app imports from any of these, switch to the `effect/unstable/*` equivalent. The v4 companion `@effect/vitest@4.0.0-beta.67` ships side-by-side with the main `effect` beta — use it as a dev dep for `it.effect` style tests.
-
-## HttpApi notes
+### Node actions and `NodeContext`
 
 <Warning>
-  `@confect/server`'s HTTP API surface is **stubbed** on the `next` channel. The implementation is typed as `any` with `TODO(effect4)` markers pending a full rewrite against `effect/unstable/{http,httpapi}`.
-
-  The v4 reshape touches `HttpApi`, `HttpApp`, `HttpRouter`, `HttpApiBuilder.toWebHandler`, `HttpApiScalar.layer`, and `HttpServer.layerContext`. Tracking issue in the [follow-up tasks](#known-gaps-and-follow-ups).
-
-  If your app depends on Confect's HTTP API, pin `@confect/server@^7` against Effect 3 until the rewrite lands.
+  Effect 4 has not yet shipped a Node platform layer (was `@effect/platform-node`'s `NodeContext.layer` in v3). On `@next`, Confect's `NodeAction` handlers **do not receive** `FileSystem` / `Path` / `CommandExecutor` in their context.
 </Warning>
 
-## Things that stay the same
+If your Node-action handlers used these services, you have two options until Effect ships `effect/unstable/process` equivalents:
 
-Confect's public API shape is largely unchanged. You do **not** need to rewrite:
+- Call Node's built-ins (`node:fs/promises`, `node:path`, `node:child_process`) inside `Effect.tryPromise` / `Effect.callback`.
+- Pin `@confect/server@^7` (`@latest`) for the Node-action path until the `effect/unstable/*` Node layers land.
 
-- `Table.make(...)`, `DatabaseSchema.make().addTable(...)`, and the rest of the schema-definition surface.
-- `FunctionSpec.publicQuery` / `publicMutation` / `publicAction` and `GroupSpec.make().addFunction(...)`.
-- `FunctionImpl.make(api, "group", "name", handler)` and `GroupImpl.make(api, "group")`.
-- React hook names — `useQuery`, `useMutation`, `useAction`, `usePaginatedQuery` — and their argument shapes.
-- The `_generated/api`, `_generated/services`, and `_generated/refs` output produced by `confect codegen`.
-- `confect dev` and `confect codegen` CLI behaviour.
+`@confect/cli` itself ships a small Node shim at `packages/cli/src/internal/{fs,path,command}.ts` you can copy if you want a typed Effect surface in your own code.
 
-The Confect-specific changes are concentrated in the **types you import from `effect`**, not in Confect's own exports.
+### HTTP API
 
-## Step-by-step upgrade checklist
+<Warning>
+  Confect's HTTP API surface is **stubbed** on the `@next` channel. `packages/server/src/HttpApi.ts` is typed as `any` with `TODO(effect4)` markers pending a full rewrite against `effect/unstable/{http,httpapi}`.
+
+  Effect 4 reshaped `HttpApi`, `HttpApp`, `HttpRouter`, `HttpApiBuilder.toWebHandler`, `HttpApiScalar.layer`, and `HttpServer.layerContext`. If your app mounts Confect HTTP routes, pin `@confect/server@^7` (`@latest`) for now.
+</Warning>
+
+### Cron jobs
+
+The only API change is in the Effect 4 `Cron` module: `Cron.unsafeParse` → `Cron.parseUnsafe`. If you build crons through Confect, the wrapper functions don't change.
+
+```diff
+- Cron.unsafeParse("0 9 * * 1")
++ Cron.parseUnsafe("0 9 * * 1")
+```
+
+### Custom services that compose with Confect
+
+If you define your own services (e.g. an `Email` service injected into action handlers), the v3 `Effect.Service<Self>()(name, { effect, dependencies, accessors })` class block is gone. Switch to a `Context.Service` tag plus a `Layer.effect`:
+
+<CodeGroup>
+
+```ts latest
+import { Effect } from "effect";
+
+export class Email extends Effect.Service<Email>()(
+  "@yourapp/Email",
+  {
+    effect: Effect.gen(function* () {
+      return {
+        send: (to: string, body: string) =>
+          Effect.promise(() => fetch(/* ... */)),
+      };
+    }),
+    accessors: true,
+  },
+) {}
+```
+
+```ts next
+import { Context, Effect, Layer } from "effect";
+
+const make = () => ({
+  send: (to: string, body: string) =>
+    Effect.promise(() => fetch(/* ... */)),
+});
+
+export class Email extends Context.Service<
+  Email,
+  ReturnType<typeof make>
+>()("@yourapp/Email") {}
+
+export const layer = Layer.succeed(Email, make());
+```
+
+</CodeGroup>
+
+Then provide `Email.layer` (or a more elaborate `Layer.effect(Email, makeEff)`) where you previously listed `Email.Default` or `Email.live`.
+
+To call into the service from a handler, both versions look identical at the call site:
+
+```ts
+Effect.gen(function* () {
+  const email = yield* Email;
+  yield* email.send("a@b.com", "hi");
+});
+```
+
+### Testing
+
+`@confect/test`'s `TestConfect` interface is unchanged on the surface. Two notes:
+
+- The error channel of `run` / `query` / `mutation` / `action` now contains `Schema.SchemaError` instead of `ParseResult.ParseError`.
+- `convex-test` jumped from `0.0.41` to `^0.0.53`. The key win is parallel-call isolation via `AsyncLocalStorage` (landed in 0.0.45) — multiple `convexTest()` invocations no longer share global state.
+- `@effect/vitest@4.0.0-beta.67` ships the v4 versions of `it.effect`, `it.scoped`, and assertion utilities. Use `assertSuccess` / `assertFailure` (from `@effect/vitest/utils`) in place of `assertRight` / `assertLeft`.
+
+### Confect-specific service tag identifiers
+
+If you registered services against Confect's tag identifiers (rare), nothing changed:
+
+- `@confect/server/Auth`, `@confect/server/DatabaseReader`, `@confect/server/DatabaseWriter`, etc. — same string identifiers in both channels.
+
+The `Symbol.for("ConvexId")` annotation key Confect uses internally on `GenericId` *is* different on `@next` (now `"@confect/core/ConvexId"`), but you only see this if you introspect the annotation directly with `SchemaAST.resolveAt`.
+
+## Convex version bump (1.30 → 1.39)
+
+`@next` peers Convex `^1.39.0`. Versions 1.30 through 1.39 ship a handful of additions confect doesn't yet wrap as Effect services:
+
+| Convex version | Addition | Confect status |
+|---|---|---|
+| 1.31 | `db.get("table", id)` explicit-table-id form | Passes through |
+| 1.32 | `PaginationOptions.{maximumRowsRead, maximumBytesRead}` | Passes through |
+| 1.32 | `OrderedQuery.paginate(opts, filter)` filter callback | Passes through |
+| 1.36 | `ctx.meta.{getFunctionMetadata, getTransactionMetrics}` | Not yet exposed as a service |
+| 1.37 | `ctx.meta.getDeploymentMetadata` | Not yet exposed |
+| 1.38 | `ctx.meta.getRequestMetadata` | Not yet exposed |
+| 1.39 | Typed env vars in `defineApp` / `defineComponent` | Not yet exposed |
+
+The `ctx.meta.*` accessors will land as Confect Effect services in a follow-up. Until then, reach for them on the raw `ctx` your handler receives if you need them now.
+
+## Step-by-step upgrade
 
 <Steps>
-  <Step title="Bump peer and dev dependencies">
-    Update each consumer package to `effect@4.0.0-beta.67`, `convex@^1.39.0`, `convex-test@^0.0.53`, `@effect/vitest@4.0.0-beta.67`, and the `@confect/*@next` packages. Remove any direct dependency on `@effect/{platform,platform-node,cluster,experimental,rpc,sql,workflow}` — they no longer exist on the v4 channel.
+  <Step title="Bump dependencies">
+    Update each consuming package:
 
-    Pin via `pnpm.overrides` if you're in a monorepo (see [Install](#install)).
+    ```bash
+    pnpm add @confect/core@next @confect/server@next @confect/react@next \
+      effect@4.0.0-beta.67 convex@^1.39.0
+    pnpm add -D @confect/test@next convex-test@^0.0.53 \
+      @effect/vitest@4.0.0-beta.67
+    ```
+
+    If you mount HTTP routes or use the CLI for codegen, **stop here** and stay on `@latest` for those packages — they aren't ready on `@next`.
   </Step>
 
-  <Step title="Run typecheck and triage by category">
-    Run `pnpm tsc --noEmit` (or `tsc --noEmit -p tsconfig.json` per package). Group errors by API category — Schema, Effect, Stream, Layer — and apply the renames in the tables above as a mechanical sweep.
+  <Step title="Rename your error classes">
+    `Schema.TaggedError` → `Schema.TaggedErrorClass`. Do this everywhere you declare an `error` schema on `FunctionSpec`.
   </Step>
 
-  <Step title="Apply Schema API renames">
-    Most call sites just need:
+  <Step title="Update your React error-handling">
+    `useMutation` and `useAction` results returning `Promise<Either<A, E>>` now return `Promise<Result<A, E>>`. Replace `Either.match({ onLeft, onRight })` with `Result.match({ onFailure, onSuccess })`. Anywhere you access `.left` / `.right`, switch to `.failure` / `.success` after narrowing with `Result.isFailure` / `Result.isSuccess`.
+  </Step>
+
+  <Step title="Apply the generic Effect renames">
+    Now lean on Effect's own migration guide for the bulk of the work. For Confect users the high-value sweep is:
 
     - `Schema.Schema<A, I>` → `Schema.Codec<A, I, never, never>`
-    - `Schema.encode/decode` → `Schema.encodeEffect/decodeEffect`
+    - `Schema.encode`/`Schema.decode` → `Schema.encodeEffect`/`Schema.decodeEffect`
     - `Schema.optionalWith(s, { exact: true })` → `Schema.optionalKey(s)`
-    - `Schema.Union(a, b, c)` → `Schema.Union([a, b, c])`
-    - `Schema.TaggedError` → `Schema.TaggedErrorClass`
-    - `Schema.annotations({...})` → `Schema.annotate({...})`
+    - `Schema.Union(a, b)` → `Schema.Union([a, b])`
     - `ParseResult.ParseError` → `Schema.SchemaError`
-  </Step>
-
-  <Step title="Apply Effect / Stream / Layer / Result renames">
-    The high-value mechanical replacements:
-
-    - `Either` → `Result` (`.left`/`.right` → `.failure`/`.success`)
+    - `Either` → `Result`
     - `Effect.either` → `Effect.result`
-    - `Effect.catchAll` → `Effect.matchEffect`
-    - `Effect.catchTag("ParseError", ...)` → `Effect.catchTag("SchemaError", ...)`
-    - `Effect.withClock(c)` → `Effect.provideService(Clock.Clock, c)`
-    - `Layer.scoped` → `Layer.effect`
-    - `Stream.asyncScoped` → `Stream.callback`
-    - `Stream.unwrapScoped` → `Stream.unwrap`
-    - `Stream.runCollect` returns `Array<A>` — drop `Chunk.toArray`
-    - `Ref.unsafeMake` → `Ref.makeUnsafe`
-    - `Option.fromNullable` → `Option.fromNullishOr`
-    - `Order.number` → `Order.Number`
+
+    See the [Effect 4 migration guide](https://github.com/Effect-TS/effect-smol/blob/main/migration/schema.md) for the comprehensive list — every entry there applies if you use that API.
   </Step>
 
-  <Step title="Update annotation keys">
-    Replace `Symbol.for("X")` annotation keys with stable string keys like `"@yourapp/<pkg>/X"`. Annotation lookup also changed:
-
-    ```ts
-    // v3
-    SchemaAST.getAnnotation<T>(key)(ast); // Option<T>
-
-    // v4
-    Option.fromNullishOr(SchemaAST.resolveAt<T>(key)(ast)); // Option<T>
-    ```
+  <Step title="Reshape your own services">
+    Replace `Effect.Service<Self>()(name, {...})` class blocks with a `Context.Service` tag + `Layer.effect` pair (see [Custom services](#custom-services-that-compose-with-confect)).
   </Step>
 
-  <Step title="Reshape services to Context.Service">
-    Replace `Effect.Service<Self>()(name, {...})` class blocks with the `Context.Service<Self, Shape>()(name)` tag plus an explicit `Layer.effect(tag, eff)` (or `Layer.succeed` for constants). See [the worked example](#worked-example-services-and-layers).
+  <Step title="Run your tests">
+    `pnpm vitest run`. The mechanical changes from above should clear most failures. The remaining are typically `assertRight` / `assertLeft` → `assertSuccess` / `assertFailure`.
   </Step>
 
-  <Step title="Verify tests">
-    The `@effect/vitest@4.0.0-beta.67` companion ships the v4 versions of `it.effect`, `it.scoped`, and assertion utilities. Most test-level changes are mechanical (`Either` → `Result` narrowing, `Schema.TaggedErrorClass` mismatches). If you rely on `Chunk.toArray(Stream.runCollect(...))`, drop the wrapper.
-  </Step>
-
-  <Step title="Smoke test against a deployment">
-    Run `confect dev` plus `convex dev` and exercise a query, mutation, action, and (if applicable) HTTP endpoint. Watch for ConfigProvider issues if you read environment values — Confect's `ConvexConfigProvider.make()` is the supported path.
+  <Step title="Smoke test against your deployment">
+    Run `convex dev` and exercise a query, mutation, action, and (if you don't depend on the stubbed HTTP API) any HTTP routes. Confect's `ConvexConfigProvider.make()` is still the supported path for reading env vars.
   </Step>
 </Steps>
 
-## Known gaps and follow-ups
+## What did the Confect team change to make this work?
 
-These items are tracked separately from the v4 base port. Each is mechanical and unblocks individually:
+Most of the work is internal. If you're curious what we did under the hood:
+
+- **`extendWithSystemFields`** (in `@confect/core/SystemFields`) gained a runtime branch for `Schema.Union<readonly Schema.Struct[]>` so polymorphic tables work — via `Schema.fieldsAssign` for the struct case and `mapMembers(Tuple.map(Schema.fieldsAssign(...)))` for unions.
+- **`Ref.runWithCodec`** and the rest of `@confect/core/Ref` re-route through `Schema.encodeEffect`/`Schema.decodeEffect` (was `Schema.encode`/`Schema.decode`); error channels switched to `Schema.SchemaError`.
+- **`@confect/server/Auth`, `DatabaseReader`, `DatabaseWriter`, `Scheduler`, `StorageReader`, `StorageWriter`, `StorageActionWriter`, `QueryRunner`, `MutationRunner`, `ActionRunner`** all moved from `Effect.Service<Self>()(name, {...})` class blocks to `Context.Service<Self, Shape>()(name)` + `Layer.succeed` factories.
+- **`@confect/server/Registry`** moved from class-style `Context.Reference` to the function form `Context.Reference<Ref<RegistryItems>>(name, { defaultValue: () => Ref.makeUnsafe({}) })`.
+- **`@confect/server/RegisteredConvexFunction`** got a hand-rolled `Clock` implementation for the `Date.now`-stubbing trick (Effect 4 removed `Clock.make()`; the unsafe accessor methods are now `currentTimeMillisUnsafe`/`currentTimeNanosUnsafe`).
+- **`@confect/server/HttpApi`** was stubbed with `any` casts and `TODO(effect4)` markers pending the full rewrite against `effect/unstable/{http,httpapi}`.
+- **`@confect/js/WebSocketClient.reactiveQuery`** uses `Stream.callback((queue) => Effect)` (was `Stream.asyncScoped((emit) => Effect)`), pushing values with `Queue.offerUnsafe` and failures with `Queue.failCauseUnsafe(queue, Cause.fail(e))`.
+- **`@confect/react/QueryResult`** lost `Hash.cached` (removed in v4) — the inner `Hash.combine(...)` calls now run uncached. Negligible impact for typical UI usage.
+- **`@confect/cli`** received Node shims for the missing `effect/unstable/*` Node platform layer: `packages/cli/src/internal/{fs.ts, path.ts, command.ts}` — thin `Effect.tryPromise` / `Effect.callback` wrappers around `node:fs/promises`, `node:path`, and `node:child_process`. The CLI itself is excluded from the `@next` workspace pending the full `effect/unstable/cli` port.
+
+## Known gaps
+
+These items are tracked separately from the v4 base port:
 
 <AccordionGroup>
-  <Accordion title="@confect/cli port to effect/unstable/cli">
-    The CLI is excluded from the `effect4-modernize` workspace. Its dependencies on `@effect/cli` / `@effect/platform-node` / `@effect/printer` are Effect 3-only. A follow-up PR rewrites the entrypoint against `effect/unstable/cli`. Consumers who need codegen on the `next` channel should pin `@confect/cli@^7` (Effect 3) until that lands.
+  <Accordion title="@confect/cli on @next">
+    Currently excluded from the workspace; pinned to Effect 3 companions. The port migrates `@effect/cli` → `effect/unstable/cli`, `@effect/platform-node` → real Node platform shims, and the class-style `Effect.Service` blocks to `Context.Service` + `Layer.effect`. Use `@confect/cli@^7` (`@latest`) for now.
   </Accordion>
 
   <Accordion title="HttpApi full rewrite">
-    `packages/server/src/HttpApi.ts` is stubbed with `any` and `TODO(effect4)` markers. The full rewrite targets `effect/unstable/{http,httpapi}` which reshaped `HttpApi`, `HttpApp`, `HttpRouter`, `HttpApiBuilder.toWebHandler`, `HttpApiScalar.layer`, and `HttpServer.layerContext`.
+    `packages/server/src/HttpApi.ts` is stubbed. The full rewrite targets `effect/unstable/{http,httpapi}`, which reshaped `HttpApi`, `HttpApp`, `HttpRouter`, `HttpApiBuilder.toWebHandler`, `HttpApiScalar.layer`, and `HttpServer.layerContext`. Pin `@confect/server@^7` (`@latest`) until this lands.
   </Accordion>
 
-  <Accordion title="ctx.meta.* exposed as Confect services">
-    Convex 1.36–1.38 added function/transaction/deployment/request metadata to `ctx.meta`. A follow-up exposes these as Confect Effect services on `ActionCtx`, `MutationCtx`, and `QueryCtx`.
+  <Accordion title="ctx.meta.* as Effect services">
+    Convex 1.36–1.38 added function/transaction/deployment/request metadata to `ctx.meta`. A follow-up exposes these as Confect Effect services on `ActionCtx`, `MutationCtx`, and `QueryCtx`. Until then, reach for them on the raw `ctx`.
   </Accordion>
 
-  <Accordion title="Polymorphic TableInfo casts">
-    `Document.ts`, `DatabaseWriter.ts`, `OrderedQuery.ts`, and `QueryInitializer.ts` carry `as never` casts to satisfy v4's stricter polymorphic schema bounds. Tightening these requires a small generics rework and is tracked as a follow-up.
+  <Accordion title="`as never` casts in @confect/server">
+    `Document.ts`, `DatabaseWriter.ts`, `OrderedQuery.ts`, and `QueryInitializer.ts` carry a handful of `as never` casts to satisfy v4's stricter polymorphic schema bounds. Tightening these requires a small generics rework. They're invisible at the call site.
   </Accordion>
 
-  <Accordion title="Test suite cleanups">
-    The Effect 4 port did a mechanical sweep across `packages/*/test/`. A handful of semantic mismatches remain — `Either` → `Result` narrowing in assertions, polymorphic `TableInfo` inference, and a few `Schema.TaggedErrorClass` vs `Codec` shape mismatches. Each is fixable per-callsite without changing runtime behaviour.
-  </Accordion>
-
-  <Accordion title="apps/example refresh">
-    The example app is excluded from the workspace until the CLI port lands (it consumes generated codegen output and uses runtime patterns we have not ported).
+  <Accordion title="Effect 4 still in beta">
+    Effect's `4.0.0-beta.X` line ships a new beta every 1–2 days. Confect's `@next` channel pins one specific beta (currently `4.0.0-beta.67`); we bump alongside notable releases. If you need a specific beta, pin in `pnpm.overrides`.
   </Accordion>
 </AccordionGroup>
 
-For the canonical port log, commit list, and per-package status table, see [RESUME.md](https://github.com/rjdellecese/confect/blob/effect4-modernize/RESUME.md).
+## Where to file issues
+
+If you hit something that isn't covered here or in the [Effect 4 migration guide](https://github.com/Effect-TS/effect-smol/blob/main/migration/schema.md), file an issue against the [`effect4-modernize` branch](https://github.com/rjdellecese/confect/tree/effect4-modernize). For the canonical port log and per-package status table, see [RESUME.md](https://github.com/rjdellecese/confect/blob/effect4-modernize/RESUME.md).
