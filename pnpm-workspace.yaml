@@ -1,6 +1,8 @@
 packages:
   - packages/*
+  - "!packages/cli"
   - apps/*
+  - "!apps/example"
 
 allowBuilds:
   '@parcel/watcher': false
