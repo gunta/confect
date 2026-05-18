@@ -91,7 +91,7 @@
       },
       {
         "group": "Guides",
-        "pages": ["guides/testing"]
+        "pages": ["guides/migrating-to-effect-4", "guides/testing"]
       }
     ]
   },

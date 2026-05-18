@@ -121,3 +121,93 @@ Raw Convex mutation context.
 <ContextBadges action />
 
 Raw Convex action context.
+
+## Defining your own services
+
+Confect builds on top of Effect's standard service primitives. In Effect 4 the
+`Effect.Service<Self>()(name, { effect, dependencies, accessors })` class
+pattern from v3 has been replaced by a smaller two-piece API:
+
+1. Declare the **tag** with `Context.Service<Self, Shape>()(name)`.
+2. Build the **layer** separately with `Layer.effect(tag, effect)` (or
+   `Layer.succeed(tag, value)` for synchronous dependencies).
+
+### Worked example: migrating an `Email` service
+
+In Effect 3 a Confect app might have defined an `Email` service like this:
+
+```ts Effect 3
+import { Effect } from "effect";
+
+import { ApiKey } from "./ApiKey";
+
+export class Email extends Effect.Service<Email>()("Email", {
+  effect: Effect.gen(function* () {
+    const apiKey = yield* ApiKey;
+    return {
+      send: (to: string, body: string) =>
+        Effect.tryPromise(() => sendWithProvider(apiKey, to, body)),
+    };
+  }),
+  dependencies: [ApiKey.Default],
+  accessors: true,
+}) {}
+```
+
+In Effect 4 the same service looks like this:
+
+```ts Effect 4
+import { Context, Effect, Layer } from "effect";
+
+import { ApiKey } from "./ApiKey";
+
+export class Email extends Context.Service<
+  Email,
+  {
+    readonly send: (to: string, body: string) => Effect.Effect<void, EmailError>;
+  }
+>()("Email") {
+  static readonly layer = Layer.effect(
+    Email,
+    Effect.gen(function* () {
+      const apiKey = yield* ApiKey;
+      return {
+        send: (to, body) =>
+          Effect.tryPromise(() => sendWithProvider(apiKey, to, body)),
+      };
+    }),
+  ).pipe(Layer.provide(ApiKey.layer));
+}
+```
+
+The key changes:
+
+- The class extends `Context.Service<Self, Shape>()("name")`, so the tag and
+  the shape are spelled explicitly.
+- The construction effect lives in a `Layer.effect(tag, effect)` call instead
+  of being passed to `Effect.Service` as a config option.
+- Dependencies are wired with `Layer.provide` on the layer, not with a
+  `dependencies` option.
+- There are no implicit accessors — yield the tag inside `Effect.gen` to read
+  the service, e.g. `const email = yield* Email; yield* email.send(...)`.
+
+You can then provide `Email.layer` into your Confect impl the same way you
+provide any other layer:
+
+```ts confect/impl.ts
+import { Impl } from "@confect/server";
+import { Layer } from "effect";
+
+import api from "./_generated/api";
+import { Email } from "./services/Email";
+import { notes } from "./notes.impl";
+
+export default Impl.make(api).pipe(
+  Layer.provide(notes),
+  Layer.provide(Email.layer),
+  Impl.finalize,
+);
+```
+
+All of the built-in Confect services on this page follow the same pattern —
+they're plain `Context.Service` tags with a static `layer` helper.

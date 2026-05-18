@@ -4,17 +4,59 @@ title: "Schema Restrictions"
 description: "Understand the restrictions on Effect schemas that can be used in Confect."
 ---
 
-Not every Effect `Schema` is valid for use in Confect. Remember that an Effect `Schema` looks like this:
+Not every Effect `Schema` is valid for use in Confect. In Effect 4, a `Schema` is a `Codec` parameterized by four type arguments:
 
 ```typescript
-type Schema<Type, Encoded, Context>
+type Codec<Type, Encoded, DecodingServices, EncodingServices>
 ```
 
-For `Schema`s used in Confect:
+For codecs used in Confect:
 
 - `Type` represents the value that you'll be operating on in your code. Any TypeScript type is permitted here.
 - `Encoded` represents the value that is stored in the database or serialized as the argument/output of a Convex function. This must be a valid [Convex value](https://docs.convex.dev/database/types#convex-values).
-- `Context` is not currently supported. It should always be `never`.
+- `DecodingServices` and `EncodingServices` (formerly the single `Context` parameter in v3) are not currently supported. They must both be `never`.
+
+<Note>
+  Effect 3 named this type `Schema.Schema<A, I>`. In Effect 4 it's
+  `Schema.Codec<A, I, never, never>`. The `Schema` namespace still re-exports
+  the same constructors (`Schema.Struct`, `Schema.String`, `Schema.Array`, …),
+  so most call sites are unchanged.
+</Note>
+
+## Supported schema constructors
+
+Confect's validator compiler walks the underlying [`SchemaAST`](https://effect.website/docs/schema/getting-started/#schemas-and-asts) and emits a Convex validator for each node. The mapping below shows what's supported, using Effect 4 constructor names.
+
+| Effect 4 `Schema` constructor | Convex validator | Notes |
+| --- | --- | --- |
+| `Schema.String` | `v.string()` | |
+| `Schema.Number` | `v.float64()` | |
+| `Schema.Boolean` | `v.boolean()` | |
+| `Schema.BigInt` | `v.int64()` | Stored as `bigint`. |
+| `Schema.Null` | `v.null_()` | Use this in place of `void`/`undefined` for `returns`. |
+| `Schema.Literal("a")` | `v.literal("a")` | |
+| `Schema.Literals(["a", "b"])` | `v.union(v.literal("a"), v.literal("b"))` | The variadic `Schema.Literal(a, b, c)` form from v3 is replaced by the array form `Schema.Literals([...])`. |
+| `Schema.Array(s)` | `v.array(...)` | |
+| `Schema.Struct({ ... })` | `v.object({ ... })` | The underlying AST tag is `Objects` in v4 (was `TypeLiteral` in v3). |
+| `Schema.Tuple([a, b])` | `v.array(v.union(a, b))` | The underlying AST tag is `Arrays` in v4 (was `TupleType` in v3). |
+| `Schema.Union([a, b, c])` | `v.union(...)` | v4 uses the array form; the variadic `Schema.Union(a, b, c)` form from v3 is removed. |
+| `Schema.optionalKey(s)` | optional field in `v.object` | v3's `Schema.optionalWith(s, { exact: true })` is replaced by `Schema.optionalKey(s)`. |
+| `Schema.URLFromString` | `v.string()` | Use this for URL fields. The v3 `Schema.URL` (which accepted a `string`) is renamed to `Schema.URLFromString`. |
+| `Schema.fieldsAssign(...)` | object extension | Replaces v3's `Schema.extend(a, b)`. Call as `a.pipe(Schema.fieldsAssign(b.fields))`. |
+| `Schema.fromJsonString(s)` | `v.string()` | Replaces v3's `Schema.parseJson(s)`. |
+
+For full details on every supported constructor, see the validator compiler in `packages/server/src/SchemaToValidator.ts`.
+
+<Note>
+  Confect's validator compiler operates on the schema AST. Effect 4 collapsed
+  several AST tags — for example, `TypeLiteral` → `Objects`, `TupleType` →
+  `Arrays`, and the `*Keyword` tags (`StringKeyword`, `NumberKeyword`, …) into
+  plain `String`, `Number`, etc. `Null` became its own tag, and `Enums` is
+  now `Enum`. You'll only encounter these names when working with raw
+  `SchemaAST`; the high-level `Schema` namespace is unaffected. Note also
+  that **annotation keys must be strings** in v4 — symbol keys are no longer
+  accepted.
+</Note>
 
 ## Additional caveats
 

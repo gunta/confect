@@ -25,4 +25,29 @@ The `next` releases come out of the `effect4-modernize` branch via [`.github/wor
 
 When Effect 4 stabilizes, this branch will exit prerelease mode (`pnpm changeset pre exit`) and merge into `main` as the next major.
 
-For the full migration writeup and the v3 → v4 API rename table, see [RESUME.md](RESUME.md).
+### What changed
+
+Schema API, Effect/Stream/Layer/Result, and Context tag shape all changed. Full v3 → v4 rename tables and worked examples live in [**Migrating to Effect 4**](apps/docs/guides/migrating-to-effect-4.mdx). For the port log and commit-by-commit history, see [RESUME.md](RESUME.md).
+
+The most common Confect-user touchpoint is the schema-type accessor:
+
+```ts
+// v3
+const Args = Schema.Struct({ id: Schema.String });
+const handler = (a: Schema.Schema.Type<typeof Args>) => Effect.succeed(null);
+
+// v4
+const Args = Schema.Struct({ id: Schema.String });
+const handler = (a: typeof Args.Type) => Effect.succeed(null);
+```
+
+### Per-package status on `next`
+
+| Package | Typecheck | Build | Notes |
+|---|---|---|---|
+| `@confect/core` | clean | 151 kB / 59 files | — |
+| `@confect/server` | clean | 380 kB / 161 files | `HttpApi` stubbed pending follow-up |
+| `@confect/js` | clean | 29.5 kB | `WebSocketClient` ported to `Stream.callback` |
+| `@confect/react` | clean | 26.3 kB | — |
+| `@confect/test` | clean | 18.6 kB / 7 files | — |
+| `@confect/cli` | clean | 174.9 kB / 37 files | excluded from `next` workspace; depends on Effect 3 companions pending the `effect/unstable/cli` rewrite |
