@@ -26,7 +26,7 @@ export const isTable = (u: unknown): u is Any =>
 
 export interface Table<
   Name_ extends string,
-  TableSchema_ extends SystemFields.AnyTableSchema,
+  TableSchema_ extends Schema.Codec<any, any, never, never>,
   TableValidator_ extends GenericValidator =
     TableSchemaToTableValidator<TableSchema_>,
   Indexes_ extends GenericTableIndexes = {},
@@ -128,7 +128,7 @@ export interface Any {
 
 export type AnyWithProps = Table<
   any,
-  SystemFields.AnyTableSchema,
+  Schema.Codec<any, any, never, never>,
   GenericValidator,
   GenericTableIndexes,
   GenericTableSearchIndexes,
@@ -305,7 +305,7 @@ const Proto = {
 
 const makeProto = <
   Name_ extends string,
-  TableSchema_ extends SystemFields.AnyTableSchema,
+  TableSchema_ extends Schema.Codec<any, any, never, never>,
   TableValidator_ extends Validator<any, any, any>,
   Indexes_ extends GenericTableIndexes,
   SearchIndexes_ extends GenericTableSearchIndexes,
@@ -348,7 +348,7 @@ const makeProto = <
  */
 export const make = <
   const Name_ extends string,
-  TableSchema_ extends SystemFields.AnyTableSchema,
+  TableSchema_ extends Schema.Codec<any, any, never, never>,
   TableValidator_ extends GenericValidator =
     TableSchemaToTableValidator<TableSchema_>,
   Indexes_ extends GenericTableIndexes = {},

@@ -78,7 +78,7 @@ export const compileReturnsSchema = <ConfectValue, ConvexValue>(
  * Convert a table `Schema` to a table `Validator`.
  */
 export type TableSchemaToTableValidator<
-  TableSchema extends SystemFields.AnyTableSchema,
+  TableSchema extends Schema.Codec<any, any, never, never>,
 > =
   ValueToValidator<TableSchema["Encoded"]> extends infer Vd extends
     | VObject<any, any, any, any>
@@ -87,7 +87,7 @@ export type TableSchemaToTableValidator<
     : never;
 
 export const compileTableSchema = <
-  TableSchema extends SystemFields.AnyTableSchema,
+  TableSchema extends Schema.Codec<any, any, never, never>,
 >(
   schema: TableSchema,
 ): TableSchemaToTableValidator<TableSchema> => {
