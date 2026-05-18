@@ -47,6 +47,14 @@ const provider = ConvexConfigProvider.make({
 });
 ```
 
+<Note>
+  Internally, `ConvexConfigProvider.make()` snapshots `process.env` at
+  construction time and forwards it to `ConfigProvider.fromEnv({ env })`.
+  Effect 4's default `ConfigProvider.fromEnv` would read `import.meta.env`,
+  which the Convex bundler cannot statically analyze; passing the env
+  explicitly side-steps that bundler limitation.
+</Note>
+
 To use a custom provider in a function handler, pass it to `Effect.withConfigProvider`.
 
 ```ts
