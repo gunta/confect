@@ -11,7 +11,9 @@ import {
   queryGeneric,
 } from "convex/server";
 import type { Value } from "convex/values";
-import { Clock, Effect, Layer, Match, pipe, Schema } from "effect";
+import { Clock, ConfigProvider, Effect, Layer, Match, pipe, Schema } from "effect";
+
+const ConfigProviderRef = ConfigProvider.ConfigProvider;
 import type * as Api from "./Api";
 import * as Auth from "./Auth";
 import * as ConvexConfigProvider from "./ConvexConfigProvider";
@@ -110,15 +112,14 @@ export const make = <Api_ extends Api.AnyWithPropsWithRuntime<"Convex">>(
 // to Clock is an opt-in to worse caching—but caching is not broken by default.
 const unpatchedClock = (realDateNow: () => number): Clock.Clock => {
   const bigint1e6 = BigInt(1_000_000);
-  const unsafeCurrentTimeMillis = () => realDateNow();
-  const unsafeCurrentTimeNanos = () => BigInt(realDateNow()) * bigint1e6;
-  const defaultClock = Clock.make();
+  const currentTimeMillisUnsafe = () => realDateNow();
+  const currentTimeNanosUnsafe = () => BigInt(realDateNow()) * bigint1e6;
   return {
-    ...defaultClock,
-    unsafeCurrentTimeMillis,
-    unsafeCurrentTimeNanos,
-    currentTimeMillis: Effect.sync(unsafeCurrentTimeMillis),
-    currentTimeNanos: Effect.sync(unsafeCurrentTimeNanos),
+    currentTimeMillisUnsafe,
+    currentTimeNanosUnsafe,
+    currentTimeMillis: Effect.sync(currentTimeMillisUnsafe),
+    currentTimeNanos: Effect.sync(currentTimeNanosUnsafe),
+    sleep: (duration) => Effect.sleep(duration),
   };
 };
 
@@ -150,9 +151,9 @@ const queryFunction = <
   handler,
 }: {
   databaseSchema: DatabaseSchema_;
-  args: Schema.Schema<Args, ConvexArgs>;
-  returns: Schema.Schema<Returns, ConvexReturns>;
-  error: Schema.Schema<Error, Value> | undefined;
+  args: Schema.Codec<Args, ConvexArgs, never, never>;
+  returns: Schema.Codec<Returns, ConvexReturns, never, never>;
+  error: Schema.Codec<Error, Value, never, never> | undefined;
   handler: (
     a: Args,
   ) => Effect.Effect<
@@ -195,7 +196,7 @@ const queryFunction = <
                 >(),
                 ctx,
               ),
-              Layer.setConfigProvider(ConvexConfigProvider.make()),
+              Layer.succeed(ConfigProviderRef, ConvexConfigProvider.make()),
             ),
           ),
         );
@@ -205,7 +206,7 @@ const queryFunction = <
           Effect.orDie,
         );
       }).pipe(
-        Effect.withClock(clock),
+        Effect.provideService(Clock.Clock, clock),
         RegisteredFunction.runHandlerPromise(error),
       ),
     ),
@@ -230,7 +231,7 @@ export const mutationLayer = <Schema extends DatabaseSchema.AnyWithProps>(
       >(),
       ctx,
     ),
-    Layer.setConfigProvider(ConvexConfigProvider.make()),
+    Layer.succeed(ConfigProviderRef, ConvexConfigProvider.make()),
   );
 
 export type MutationServices<Schema extends DatabaseSchema.AnyWithProps> =
@@ -259,9 +260,9 @@ const mutationFunction = <
   handler,
 }: {
   databaseSchema: DatabaseSchema_;
-  args: Schema.Schema<Args, ConvexArgs>;
-  returns: Schema.Schema<Returns, ConvexReturns>;
-  error: Schema.Schema<Error, Value> | undefined;
+  args: Schema.Codec<Args, ConvexArgs, never, never>;
+  returns: Schema.Codec<Returns, ConvexReturns, never, never>;
+  error: Schema.Codec<Error, Value, never, never> | undefined;
   handler: (
     a: Args,
   ) => Effect.Effect<Returns, E, MutationServices<DatabaseSchema_>>;
@@ -302,8 +303,8 @@ const convexActionFunction = <
     error,
     handler,
   }: {
-    args: Schema.Schema<Args, ConvexArgs>;
-    returns: Schema.Schema<Returns, ConvexReturns>;
+    args: Schema.Codec<Args, ConvexArgs, never, never>;
+    returns: Schema.Codec<Returns, ConvexReturns, never, never>;
     error: Schema.Codec<any, any, never, never> | undefined;
     handler: (
       a: Args,
@@ -322,6 +323,6 @@ const convexActionFunction = <
     createLayer: (ctx) =>
       Layer.mergeAll(
         RegisteredFunction.actionLayer(schema, ctx),
-        Layer.setConfigProvider(ConvexConfigProvider.make()),
+        Layer.succeed(ConfigProviderRef, ConvexConfigProvider.make()),
       ),
   });

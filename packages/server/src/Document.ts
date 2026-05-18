@@ -62,22 +62,20 @@ export const decode = Function.dual<
       const encodedDoc =
         self as (typeof TableSchemaWithSystemFields)["Encoded"];
 
-      const decodedDoc = yield* pipe(
+      const decodedDoc = yield* (pipe(
         encodedDoc,
         Schema.decodeEffect(TableSchemaWithSystemFields),
-        Effect.catchTag("ParseError", (parseError) =>
-          Effect.gen(function* () {
-            const formattedParseError =
-              yield* ParseResult.TreeFormatter.formatError(parseError);
-
-            return yield* new DocumentDecodeError({
-              tableName,
-              id: encodedDoc._id,
-              parseError: formattedParseError,
-            });
+        Effect.catchTag("SchemaError", (schemaError) =>
+          new DocumentDecodeError({
+            tableName,
+            id: encodedDoc._id,
+            parseError: schemaError.message,
           }),
         ),
-      );
+      ) as Effect.Effect<
+        DataModel.TableInfoWithName_<DataModel_, TableName>["document"],
+        DocumentDecodeError
+      >);
 
       return decodedDoc;
     }),
@@ -136,28 +134,26 @@ export const encode = Function.dual<
 
       const decodedDoc = self as TableSchemaWithSystemFields["Type"];
 
-      const encodedDoc = yield* pipe(
+      const encodedDoc = yield* (pipe(
         decodedDoc,
         Schema.encodeEffect(tableSchema),
-        Effect.catchTag("ParseError", (parseError) =>
-          Effect.gen(function* () {
-            const formattedParseError =
-              yield* ParseResult.TreeFormatter.formatError(parseError);
-
-            return yield* new DocumentEncodeError({
-              tableName,
-              id: decodedDoc._id,
-              parseError: formattedParseError,
-            });
+        Effect.catchTag("SchemaError", (schemaError) =>
+          new DocumentEncodeError({
+            tableName,
+            id: decodedDoc._id,
+            parseError: schemaError.message,
           }),
         ),
-      );
+      ) as Effect.Effect<
+        DataModel.TableInfoWithName_<DataModel_, TableName>["encodedDocument"],
+        DocumentEncodeError
+      >);
 
       return encodedDoc;
     }),
 );
 
-export class DocumentDecodeError extends Schema.TaggedError<DocumentDecodeError>()(
+export class DocumentDecodeError extends Schema.TaggedErrorClass<DocumentDecodeError>()(
   "DocumentDecodeError",
   {
     tableName: Schema.String,
@@ -174,7 +170,7 @@ export class DocumentDecodeError extends Schema.TaggedError<DocumentDecodeError>
   }
 }
 
-export class DocumentEncodeError extends Schema.TaggedError<DocumentEncodeError>()(
+export class DocumentEncodeError extends Schema.TaggedErrorClass<DocumentEncodeError>()(
   "DocumentEncodeError",
   {
     tableName: Schema.String,
