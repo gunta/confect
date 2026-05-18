@@ -34,7 +34,6 @@ import {
 } from "effect";
 
 import * as GenericId from "@confect/core/GenericId";
-import type * as SystemFields from "@confect/core/SystemFields";
 import type {
   IsAny,
   IsOptional,

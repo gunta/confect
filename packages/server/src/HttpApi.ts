@@ -1,11 +1,30 @@
-import {
-  type HttpApi,
-  HttpApiBuilder,
-  HttpApiScalar,
-  type HttpApp,
-  type HttpRouter,
-  HttpServer,
-} from "@effect/platform";
+// TODO(effect4): re-validate effect/unstable/{http,httpapi} surface; v4 changed
+// HttpApi<Id, Groups>, removed HttpApp module, and reshaped HttpRouter. The
+// type names below are loose `any` placeholders until the upstream confect
+// HttpApi consumer pattern is rewritten against the new shapes.
+import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
+import { HttpServer } from "effect/unstable/http";
+import { ConfigProvider } from "effect";
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace HttpApi {
+  export type Api = any;
+}
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace HttpApp {
+  export type Default<_E = never, _R = never> = any;
+}
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace HttpRouter {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  export namespace HttpRouter {
+    export type DefaultServices = any;
+  }
+}
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace HttpApiBuilderNS {
+  export type Router = any;
+}
 import {
   type HttpRouter as ConvexHttpRouter,
   type GenericActionCtx,
@@ -31,7 +50,7 @@ type Middleware = (
   httpApp: HttpApp.Default,
 ) => HttpApp.Default<
   never,
-  HttpApi.Api | HttpApiBuilder.Router | HttpRouter.HttpRouter.DefaultServices
+  HttpApi.Api | HttpApiBuilderNS.Router | HttpRouter.HttpRouter.DefaultServices
 >;
 
 const makeHandler =
@@ -75,7 +94,10 @@ const makeHandler =
       ),
     );
 
-    const ApiDocsLive = HttpApiScalar.layer({
+    // TODO(effect4): HttpApiScalar.layer/HttpServer.layerContext/
+    // HttpApiBuilder.toWebHandler all changed shape in v4. Cast through any
+    // until the new surface is wired in this file.
+    const ApiDocsLive = (HttpApiScalar.layer as any)({
       path: `${pathPrefix}docs`,
       scalar: {
         baseServerURL: `${process.env["CONVEX_SITE_URL"]}${pathPrefix}`,
@@ -86,11 +108,11 @@ const makeHandler =
     const EnvLive = Layer.mergeAll(
       ApiLive,
       ApiDocsLive,
-      HttpServer.layerContext,
-      Layer.setConfigProvider(ConvexConfigProvider.make()),
+      (HttpServer as any).layerContext ?? Layer.empty,
+      Layer.succeed(ConfigProvider.ConfigProvider, ConvexConfigProvider.make()),
     );
 
-    const { handler } = HttpApiBuilder.toWebHandler(
+    const { handler } = (HttpApiBuilder as any).toWebHandler(
       EnvLive,
       middleware ? { middleware } : {},
     );

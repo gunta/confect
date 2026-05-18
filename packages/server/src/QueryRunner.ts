@@ -1,6 +1,6 @@
 import * as Ref from "@confect/core/Ref";
 import { type GenericQueryCtx } from "convex/server";
-import type { ParseResult, Effect } from "effect";
+import type { Effect, Schema } from "effect";
 import { Context, Layer } from "effect";
 
 const make =
