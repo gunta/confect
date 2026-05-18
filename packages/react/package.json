@@ -50,6 +50,7 @@
   "author": "RJ Dellecese",
   "license": "ISC",
   "devDependencies": {
+    "@effect/vitest": "4.0.0-beta.67",
     "@eslint/js": "10.0.1",
     "@types/node": "25.3.3",
     "convex": "1.39.1",

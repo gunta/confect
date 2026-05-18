@@ -423,13 +423,13 @@ const handleUnion = (
   isOptionalPropertyOfTypeLiteral: boolean,
 ) =>
   Effect.gen(function* () {
-    const validatorEffects = isOptionalPropertyOfTypeLiteral
-      ? Array.filterMap(types, (type) =>
-          Predicate.not(SchemaAST.isUndefined)(type)
-            ? Option.some(compileAst(type))
-            : Option.none(),
-        )
-      : Array.map(types, (type) => compileAst(type));
+    const consideredTypes: ReadonlyArray<SchemaAST.AST> =
+      isOptionalPropertyOfTypeLiteral
+        ? Array.filter(types, Predicate.not(SchemaAST.isUndefined))
+        : types;
+
+    const validatorEffects: ReadonlyArray<ReturnType<typeof compileAst>> =
+      Array.map(consideredTypes, (type) => compileAst(type));
 
     const [firstValidator, secondValidator, ...restValidators] =
       yield* Effect.all(validatorEffects);

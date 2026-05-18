@@ -59,6 +59,7 @@
     "@ark/attest": "0.56.0",
     "@confect/cli": "workspace:*",
     "@confect/test": "workspace:*",
+    "@effect/vitest": "4.0.0-beta.67",
     "@eslint/js": "10.0.1",
     "@swc/jest": "0.2.39",
     "@types/node": "25.3.3",

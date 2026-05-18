@@ -244,6 +244,9 @@ importers:
       '@ark/attest':
         specifier: 0.56.0
         version: 0.56.0(typescript@5.9.3)
+      '@effect/vitest':
+        specifier: 4.0.0-beta.67
+        version: 4.0.0-beta.67(effect@4.0.0-beta.67)(vitest@3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0))
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.0.2(jiti@1.21.7))
@@ -284,6 +287,9 @@ importers:
         specifier: 1.39.1
         version: 1.39.1(react@19.2.4)
     devDependencies:
+      '@effect/vitest':
+        specifier: 4.0.0-beta.67
+        version: 4.0.0-beta.67(effect@4.0.0-beta.67)(vitest@3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0))
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.0.2(jiti@1.21.7))
@@ -321,6 +327,9 @@ importers:
         specifier: 19.2.4
         version: 19.2.4
     devDependencies:
+      '@effect/vitest':
+        specifier: 4.0.0-beta.67
+        version: 4.0.0-beta.67(effect@4.0.0-beta.67)(vitest@3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0))
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.0.2(jiti@1.21.7))
@@ -373,6 +382,9 @@ importers:
       '@confect/test':
         specifier: workspace:*
         version: link:../test
+      '@effect/vitest':
+        specifier: 4.0.0-beta.67
+        version: 4.0.0-beta.67(effect@4.0.0-beta.67)(vitest@3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0))
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.0.2(jiti@1.21.7))
@@ -774,6 +786,12 @@ packages:
     peerDependencies:
       effect: 4.0.0-beta.67
       vitest: ^3.2.0
+
+  '@effect/vitest@4.0.0-beta.67':
+    resolution: {integrity: sha512-+VBKCcyKY7wfMP5TivONEWExdVF3aR/jhF2+at7hTN5qMBFDX3EsHSfKrRG6R55OBGPXWiYshHZ/raleR2PKjw==}
+    peerDependencies:
+      effect: 4.0.0-beta.67
+      vitest: ^3.0.0 || ^4.0.0
 
   '@effect/workflow@0.18.1':
     resolution: {integrity: sha512-FxsUxkyvd7CyN7tw4bQgmAJv8tf8hUwy72bwGYzKGpeuiEObiUKgO1pg8xM49gB6EtwOdVRJhytwcFc8eM/6ow==}
@@ -7225,6 +7243,11 @@ snapshots:
       effect: 4.0.0-beta.67
 
   '@effect/vitest@0.29.0(effect@4.0.0-beta.67)(vitest@3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0))':
+    dependencies:
+      effect: 4.0.0-beta.67
+      vitest: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0)
+
+  '@effect/vitest@4.0.0-beta.67(effect@4.0.0-beta.67)(vitest@3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       effect: 4.0.0-beta.67
       vitest: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.3)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.9.0)
