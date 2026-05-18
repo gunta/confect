@@ -405,11 +405,9 @@ const handleDeclaration = (
       return v.bytes();
     }
 
-    return yield* Effect.fail(
-      new UnsupportedSchemaTypeError({
-        schemaType: declaration._tag,
-      }),
-    );
+    return yield* new UnsupportedSchemaTypeError({
+      schemaType: declaration._tag,
+    });
   });
 
 const handleUnion = (
