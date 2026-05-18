@@ -7,9 +7,14 @@
  * are small (read/write/exists/mkdir/readdir/stat), so we bypass the
  * `FileSystem` service entirely here.
  */
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
+import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
+import * as Stream from "effect/Stream";
+import { watch as nodeWatch } from "node:fs";
 import * as fs from "node:fs/promises";
+import nodePath from "node:path";
 
 export class FsError extends Schema.TaggedErrorClass<FsError>()("FsError", {
   op: Schema.String,
@@ -83,4 +88,70 @@ export const remove = (
       recursive: options?.recursive ?? false,
       force: options?.force ?? false,
     }),
+  );
+
+/**
+ * Subset of `@effect/platform/FileSystem`'s `WatchEvent` shape that's relevant
+ * for the CLI's watcher.
+ */
+export type WatchEvent =
+  | { readonly _tag: "Create"; readonly path: string }
+  | { readonly _tag: "Update"; readonly path: string }
+  | { readonly _tag: "Remove"; readonly path: string };
+
+const eventFromNode = (
+  type: string,
+  filename: string | null,
+  dir: string,
+): WatchEvent | null => {
+  if (filename === null) return null;
+  const fullPath = nodePath.join(dir, filename);
+  if (type === "rename") {
+    // Node's `rename` covers both creation and deletion; we surface both as
+    // `Update` since the CLI watcher just needs to know "something changed".
+    return { _tag: "Update", path: fullPath };
+  }
+  if (type === "change") {
+    return { _tag: "Update", path: fullPath };
+  }
+  return null;
+};
+
+/**
+ * Watch a directory for changes, mirroring `@effect/platform/FileSystem.watch`.
+ * Emits `WatchEvent`s for both file creations and modifications.
+ */
+export const watch = (path: string): Stream.Stream<WatchEvent, FsError> =>
+  Stream.callback<WatchEvent, FsError>((queue) =>
+    Effect.acquireRelease(
+      Effect.sync(() => {
+        const watcher = nodeWatch(
+          path,
+          { persistent: true },
+          (eventType, filename) => {
+            const event = eventFromNode(eventType, filename, path);
+            if (event !== null) {
+              Queue.offerUnsafe(queue, event);
+            }
+          },
+        );
+        watcher.on("error", (error) => {
+          Queue.failCauseUnsafe(
+            queue,
+            Cause.fail(
+              new FsError({
+                op: "watch",
+                path,
+                message: error.message,
+              }),
+            ),
+          );
+        });
+        return watcher;
+      }),
+      (watcher) =>
+        Effect.sync(() => {
+          watcher.close();
+        }),
+    ),
   );

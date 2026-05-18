@@ -392,7 +392,7 @@ class CodeBlockWriter {
   indent<E = never, R = never>(
     eff: Effect.Effect<void, E, R>,
   ): Effect.Effect<void, E, R> {
-    return Effect.gen(this, function* () {
+    return Effect.gen({ self: this }, function* () {
       const indentationLevel = this.writer.getIndentationLevel();
       this.writer.setIndentationLevel(indentationLevel + 1);
       yield* eff;

@@ -23,7 +23,7 @@ export class ConvexDirectoryNotFoundError extends Schema.TaggedErrorClass<Convex
   }
 }
 
-const ConvexJsonConfig = Schema.parseJson(
+const ConvexJsonConfig = Schema.fromJsonString(
   Schema.Struct({
     functions: Schema.optional(Schema.String),
   }),
