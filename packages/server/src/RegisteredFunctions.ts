@@ -66,7 +66,7 @@ export const make = <Api_ extends Api.AnyWithProps>(
     ).pipe(
       Match.withReturnType<Effect.Effect<RegisteredFunctions<Api_["spec"]>>>(),
       Match.when("Unfinalized", () =>
-        Effect.dieMessage("Impl is not finalized"),
+        Effect.die("Impl is not finalized"),
       ),
       Match.when("Finalized", () =>
         Effect.succeed(

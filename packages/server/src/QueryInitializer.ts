@@ -290,7 +290,7 @@ export class GetByIdFailure extends Schema.TaggedErrorClass<GetByIdFailure>()(
     tableName: Schema.String,
   },
 ) {
-  override get message(): string {
+  get message(): string {
     return Document.documentErrorMessage({
       id: this.id,
       tableName: this.tableName,
@@ -307,7 +307,7 @@ export class GetByIndexFailure extends Schema.TaggedErrorClass<GetByIndexFailure
     indexFieldValues: Schema.Array(Schema.String),
   },
 ) {
-  override get message(): string {
+  get message(): string {
     return `No documents found in table '${this.tableName}' with index '${this.indexName}' and field values '${this.indexFieldValues}'`;
   }
 }

@@ -1,58 +1,24 @@
-import {
-  Array,
-  ConfigError,
-  ConfigProvider,
-  ConfigProviderPathPatch,
-  Effect,
-  pipe,
-} from "effect";
+import { ConfigProvider } from "effect";
 
 declare const process: { env: Record<string, string | undefined> };
 
-export const make = (
-  options?: Partial<ConfigProvider.ConfigProvider.FromEnvConfig>,
-): ConfigProvider.ConfigProvider => {
-  const pathDelim = options?.pathDelim ?? "_";
-  const seqDelim = options?.seqDelim ?? ",";
-
-  return ConfigProvider.fromFlat(
-    ConfigProvider.makeFlat({
-      load: (path, primitive, split = true) => {
-        const pathString = Array.join(path, pathDelim);
-        const value = process.env[pathString];
-
-        if (value === undefined) {
-          return Effect.fail(
-            ConfigError.MissingData(
-              [...path],
-              `Expected ${pathString} to exist in the process context`,
-            ),
-          );
-        }
-
-        const parse = (text: string) =>
-          pipe(
-            primitive.parse(text.trim()),
-            Effect.mapError(ConfigError.prefixed([...path])),
-          );
-
-        if (!split) {
-          return pipe(parse(value), Effect.map(Array.of));
-        } else {
-          return pipe(
-            value.split(seqDelim),
-            Effect.forEach((v) => parse(v)),
-          );
-        }
-      },
-      enumerateChildren: (path) =>
-        Effect.fail(
-          ConfigError.Unsupported(
-            [...path],
-            "process.env is not enumerable in the Convex runtime",
-          ),
-        ),
-      patch: ConfigProviderPathPatch.empty,
-    }),
-  );
+/**
+ * Build a `ConfigProvider` that reads from `process.env` at Convex function
+ * runtime.
+ *
+ * Effect 4's `ConfigProvider.fromEnv` would normally use `import.meta.env`,
+ * which the Convex bundler cannot statically analyze (see effect-smol#2143).
+ * Pass an explicit env snapshot at construction time to side-step that.
+ */
+export const make = (options?: {
+  readonly pathDelim?: string;
+  readonly seqDelim?: string;
+}): ConfigProvider.ConfigProvider => {
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) {
+      env[key] = value;
+    }
+  }
+  return ConfigProvider.fromEnv({ env });
 };

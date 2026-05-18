@@ -574,7 +574,7 @@ export class TopLevelMustBeObjectError extends Data.TaggedError(
   "TopLevelMustBeObjectError",
 ) {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return "Top level schema must be an object";
   }
   /* v8 ignore stop */
@@ -584,7 +584,7 @@ export class TopLevelMustBeObjectOrUnionError extends Data.TaggedError(
   "TopLevelMustBeObjectOrUnionError",
 ) {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return "Top level schema must be an object or a union";
   }
   /* v8 ignore stop */
@@ -596,7 +596,7 @@ export class UnsupportedPropertySignatureKeyTypeError extends Data.TaggedError(
   readonly propertyKey: number | symbol;
 }> {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return `Unsupported property signature '${this.propertyKey.toString()}'. Property is of type '${typeof this.propertyKey}' but only 'string' properties are supported.`;
   }
   /* v8 ignore stop */
@@ -606,7 +606,7 @@ export class EmptyTupleIsNotSupportedError extends Data.TaggedError(
   "EmptyTupleIsNotSupportedError",
 ) {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return "Tuple must have at least one element";
   }
   /* v8 ignore stop */
@@ -618,7 +618,7 @@ export class UnsupportedSchemaTypeError extends Data.TaggedError(
   readonly schemaType: SchemaAST.AST["_tag"];
 }> {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return `Unsupported schema type '${this.schemaType}'`;
   }
   /* v8 ignore stop */
@@ -628,7 +628,7 @@ export class IndexSignaturesAreNotSupportedError extends Data.TaggedError(
   "IndexSignaturesAreNotSupportedError",
 ) {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return "Index signatures are not supported";
   }
   /* v8 ignore stop */
@@ -638,7 +638,7 @@ export class MixedIndexAndPropertySignaturesAreNotSupportedError extends Data.Ta
   "MixedIndexAndPropertySignaturesAreNotSupportedError",
 ) {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return "Mixed index and property signatures are not supported";
   }
   /* v8 ignore stop */
@@ -648,7 +648,7 @@ export class OptionalTupleElementsAreNotSupportedError extends Data.TaggedError(
   "OptionalTupleElementsAreNotSupportedError",
 ) {
   /* v8 ignore start */
-  override get message() {
+  get message() {
     return "Optional tuple elements are not supported";
   }
   /* v8 ignore stop */

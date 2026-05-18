@@ -161,7 +161,7 @@ export class DocumentDecodeError extends Schema.TaggedErrorClass<DocumentDecodeE
     parseError: Schema.String,
   },
 ) {
-  override get message(): string {
+  get message(): string {
     return documentErrorMessage({
       id: this.id,
       tableName: this.tableName,
@@ -178,7 +178,7 @@ export class DocumentEncodeError extends Schema.TaggedErrorClass<DocumentEncodeE
     parseError: Schema.String,
   },
 ) {
-  override get message(): string {
+  get message(): string {
     return documentErrorMessage({
       id: this.id,
       tableName: this.tableName,
