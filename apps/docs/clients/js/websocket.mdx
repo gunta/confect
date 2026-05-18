@@ -53,7 +53,7 @@ Each method returns an `Effect` that can fail with `WebSocketClientError` (defin
 
 ## Reactive queries
 
-`reactiveQuery` subscribes to a query over the WebSocket connection and returns a `Stream` that emits a new value whenever the query result changes on the server. Internally the stream is built with Effect 4's `Stream.callback` (replacing v3's `Stream.asyncScoped`); the user-facing API is unchanged.
+`reactiveQuery` subscribes to a query over the WebSocket connection and returns a `Stream` that emits a new value whenever the query result changes on the server.
 
 ```ts
 import { WebSocketClient } from "@confect/js";

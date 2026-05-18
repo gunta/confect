@@ -135,11 +135,11 @@ describe("notes", () => {
 });
 ```
 
-In Effect 4, `Effect.either` has been replaced with `Effect.result`, which materializes the error channel as a `Result.Result<A, E>` instead of `Either<E, A>`. The matching `@effect/vitest/utils` helpers are `assertSuccess` and `assertFailure` (replacing v3's `assertRight` / `assertLeft`).
+`Effect.result(eff)` materialises the error channel as `Result.Result<A, E>`. Use `assertSuccess` / `assertFailure` from `@effect/vitest/utils` to assert on the result.
 
 ## Running setup code
 
-Use `run` to execute arbitrary code with mutation-context services (like `DatabaseWriter`) for test setup. When the handler returns a value, pass a `Schema.Codec<A, B, never, never>` as the second argument for decoding (Effect 4 unifies `Schema.Schema<A, I>` into `Schema.Codec<A, I, never, never>`).
+Use `run` to execute arbitrary code with mutation-context services (like `DatabaseWriter`) for test setup. When the handler returns a value, pass a `Schema.Codec<A, B, never, never>` as the second argument for decoding.
 
 ```ts
 import { GenericId } from "@confect/core";

@@ -54,10 +54,7 @@ export class Api extends HttpApi.make("Api")
 ```
 
 <Note>
-  In Effect 4, `HttpApiEndpoint.get(name, path)` accepts an options
-  object with `success`, `error`, `params`, `query`, `payload`, and
-  `headers` fields, replacing the chained `.addSuccess(s)` / `.addError(e)`
-  builder methods from Effect 3.
+  `HttpApiEndpoint.get(name, path)` accepts an options object with `success`, `error`, `params`, `query`, `payload`, and `headers` fields.
 </Note>
 
 ## Implementing handlers
@@ -84,11 +81,7 @@ export const ApiLive = HttpApiBuilder.layer(Api).pipe(
 ```
 
 <Note>
-  `HttpApiBuilder.api(Api).pipe(...)` from Effect 3 has been replaced by
-  `HttpApiBuilder.layer(Api)` in Effect 4. Each group is now provided as
-  its own `Layer` (built with `HttpApiBuilder.group(Api, name, build)`)
-  and composed with `Layer.provide`. Full v4 builder docs will land in a
-  follow-up to this prerelease.
+  Each group is provided as its own `Layer` (built with `HttpApiBuilder.group(Api, name, build)`) and composed onto `HttpApiBuilder.layer(Api)` via `Layer.provide`.
 </Note>
 
 ## Creating the router
