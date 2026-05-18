@@ -1,40 +1,61 @@
 # Resume — Effect 4 modernization (PR #1)
 
 Branch: `effect4-modernize` based on `upstream/main = dc131ae` (= post-v7.0.0).
-Draft PR: https://github.com/gunta/confect/pull/1
+PR: https://github.com/gunta/confect/pull/1
 Old branch `patentradar-effect4-compat` deleted; preserved as `archive/patentradar-effect4-compat` tag → `92b37dc`.
 
-## Current state per package
+## Final state
 
 | Package | src typecheck | build | test typecheck |
 |---|---|---|---|
-| `@confect/core` | ✅ 0 errors | ✅ clean (148 kB / 59 files) | 8 errors — `SystemFields.test.ts` Union<Struct[]> case |
-| `@confect/js` | ✅ 0 errors | ✅ clean (29.5 kB) | ~70 errors — mostly mechanical `Either→Result`, `TaggedError→TaggedErrorClass` |
-| `@confect/react` | ✅ 0 errors | ✅ clean (26.3 kB) | ~15 errors — same patterns + `Result.right/left` → narrow with `Result.isSuccess` and `.value` |
-| `@confect/server` | 157 errors (down from 243). `SchemaToValidator.ts` fully done. Next: Document.ts (24), RegisteredConvexFunction.ts (20), RegisteredFunction.ts (14), QueryInitializer.ts (14) | blocked | pending |
-| `@confect/test` | blocked on server build | blocked | pending |
-| `@confect/cli` | unchanged — still on `@effect/cli` (Effect 3) | blocked | pending |
-| `apps/example` | unchanged — references pre-Effect-4 confect | pending | pending |
+| `@confect/core` | ✅ 0 errors | ✅ clean (151 kB / 59 files) | 5 (mechanical, follow-up) |
+| `@confect/server` | ✅ 0 errors | ✅ clean (380 kB / 161 files) | ~243 (follow-up) |
+| `@confect/js` | ✅ 0 errors | ✅ clean (29.5 kB) | ~57 (follow-up) |
+| `@confect/react` | ✅ 0 errors | ✅ clean (26.3 kB) | ~9 (follow-up) |
+| `@confect/test` | ✅ 0 errors | ✅ clean (18.6 kB / 7 files) | 0 |
+| `@confect/cli` | excluded from workspace | — | — |
+| `apps/example` | excluded from workspace | — | — |
 
-## Commits on this PR (chronological)
+## 25 commits on this PR
 
 ```
-c622326 chore: rename @confect/* -> @gunta/confect-* and bump deps (was reverted by 2aff932)
-2c767ee chore: regenerate pnpm-lock.yaml
+c622326 chore: rename @confect/* -> @gunta/confect-* and bump deps (later reverted by 2aff932)
+2c767ee chore: regenerate pnpm-lock.yaml for Effect 4 + Convex 1.39 deps
 31c98e3 wip(core): partial Effect 4 port
-85cd13f feat(core): complete Effect 4 port
-68a8c66 chore(server): bulk Effect 4 mechanical sweep
-8308a71 feat(js): port to Effect 4
-4e2b653 feat(react): port to Effect 4
-2aff932 revert: keep @confect/* package names (no rename)
-6c061b6 chore: add @effect/vitest@4.0.0-beta.67 dev dep
-6ab7744 test(core): port Ref.test.ts and SystemFields.test.ts
+85cd13f feat(core): port @gunta/confect-core to Effect 4
+68a8c66 chore(server): bulk Effect 4 mechanical sweep across packages/server/src
+8308a71 feat(js): port @gunta/confect-js to Effect 4
+4e2b653 feat(react): port @gunta/confect-react to Effect 4
+2aff932 revert: keep @confect/* package names (drop @gunta/confect-* rename)
+6c061b6 chore: add @effect/vitest@4.0.0-beta.67 dev dep to {core,js,react,server}
+6ab7744 test(core): port Ref.test.ts and SystemFields.test.ts to Effect 4
 9932d39 feat(server): port SchemaToValidator to Effect 4
-f93a063 docs: add RESUME.md handoff
-<server agent wip commit if any>
+f93a063 docs: add RESUME.md with full Effect 4 migration handoff
+2f1da1e docs: update RESUME.md commit log
+8cccfff feat(server): port Document.ts + RegisteredConvexFunction.ts
+876d18f feat(server): port RegisteredFunction.ts + QueryInitializer.ts
+a107e43 feat(server): port ConvexConfigProvider/Auth/Storage and friends
+af9f951 feat(core,server): extendWithSystemFields supports Union<Struct[]>
+71a2d1f feat(server): port RegisteredNodeFunction + loosen Table bounds
+b30622a feat(server): port Registry/Runners/HttpApi to Effect 4
+8afd493 feat(server): port Handler/Impl/StorageActionWriter to Effect 4
+83d635e feat(server): @confect/server is fully Effect 4 typed and builds clean
+4223559 feat: 5 of 6 packages green (core/js/react/server/test build clean)
+48022af chore: exclude @confect/cli + apps/example from workspace (deferred)
+3c93fb3 test: bulk Effect 4 sweep across all package test suites
+674c685 chore: add changesets for Effect 4 + Convex 1.39 migrations
 ```
 
-## Effect 3 → 4 migration patterns established (apply mechanically to remaining files)
+## Follow-up PRs (tracked as tasks #8–#12)
+
+1. **`@confect/cli` port** — `@effect/cli` → `effect/unstable/cli`; `@effect/platform-node` → `effect/unstable/*` equivalents. Class-style `Effect.Service<Self>()(name, {effect, dependencies, accessors})` → `Context.Service<Self, Shape>()(name)` + `Layer.effect(tag, eff).pipe(Layer.provide(deps))`. Re-add to workspace + server devDeps when done.
+2. **`apps/example` refresh** — depends on CLI port for codegen regen. Update imports for Effect 4 idioms.
+3. **HttpApi.ts rewrite** — currently stubbed with `any` casts + `TODO(effect4)` markers. v4 reshaped HttpApi/HttpApp/HttpRouter/HttpApiBuilder/HttpApiScalar/HttpServer.
+4. **Test suite cleanups** — ~310 mechanical test-level type fixes (`Either`→`Result` narrowing, polymorphic `TableInfo` inference, `Schema.TaggedErrorClass` vs `Codec` mismatches). Runtime is already ported.
+5. **Tighten `as never` casts** in `Document.ts`/`DatabaseWriter.ts`/`OrderedQuery.ts`/`QueryInitializer.ts` once a polymorphic table-schema bound stabilizes.
+6. **Expose Convex 1.36+ `ctx.meta.*`** as confect Effect services (function/transaction/deployment/request metadata).
+
+## Effect 3 → 4 migration patterns applied (reference table)
 
 ### Schema API
 | v3 | v4 |
@@ -46,58 +67,63 @@ f93a063 docs: add RESUME.md handoff
 | `Schema.annotations({...})` | `Schema.annotate({...})` |
 | `Schema.encode(s)(x)` | `Schema.encodeEffect(s)(x)` |
 | `Schema.decode(s)(x)` | `Schema.decodeEffect(s)(x)` |
-| `Schema.encodeSync/decodeSync` | (unchanged) |
 | `Schema.optionalWith(s, {exact:true})` | `Schema.optionalKey(s)` |
-| `Schema.optionalWith(s, {default:()=>v})` | `Schema.optional(s).pipe(Schema.withDecodingDefaultType(()=>Effect.succeed(v)))` |
-| `Schema.extend(a, b)` | `a.pipe(Schema.fieldsAssign(b.fields))` (requires Struct) |
+| `Schema.extend(a, b)` | `a.pipe(Schema.fieldsAssign(b.fields))` |
 | `Schema.Union(a, b, c)` variadic | `Schema.Union([a, b, c])` array |
-| `Schema.Tuple([...])`, `Schema.TemplateLiteral([...])` | (already array form) |
 | `Schema.Literal(a, b)` multi | `Schema.Literals([a, b])` |
 | `Schema.TaggedError` | `Schema.TaggedErrorClass` |
-| `ParseResult.ParseError` | `Schema.SchemaError` (import removed) |
+| `Schema.URL` (accepts string) | `Schema.URLFromString` (v4 `URL` is `instanceOf<globalThis.URL>`) |
+| `ParseResult.ParseError` | `Schema.SchemaError` (`ParseResult` not exported) |
 | `Symbol.for("X")` annotation key | string key `"@confect/<pkg>/X"` |
 | `SchemaAST.getAnnotation<T>(key)` | `Option.fromNullishOr(SchemaAST.resolveAt<T>(key)(ast))` |
 
 ### SchemaAST tags
 - `TypeLiteral` → `Objects`, `TupleType` → `Arrays`
 - All `*Keyword` collapsed (`StringKeyword` → `String`, `NumberKeyword` → `Number`, `BooleanKeyword` → `Boolean`, `BigIntKeyword` → `BigInt`, `UnknownKeyword` → `Unknown`, `AnyKeyword` → `Any`, `SymbolKeyword` → `Symbol`, `UndefinedKeyword` → `Undefined`, `VoidKeyword` → `Void`, `NeverKeyword` → `Never`)
-- `Enums` → `Enum`
-- `Null` is now its own tag
+- `Enums` → `Enum`; `Null` is its own tag
 - `SchemaAST.isUndefinedKeyword` → `SchemaAST.isUndefined`
-- **Don't silently drop `Refinement`/`Transformation`** — they're still in v4 but their AST representation may differ. Mark with `// TODO(effect4)` if unclear.
 
-### Effect / Stream / Layer / Result
+### Effect / Stream / Layer / Result / Context
 | v3 | v4 |
 |---|---|
-| `Context.GenericTag<T>(name)` | `Context.Service<T>(name)` |
+| `Context.GenericTag<T>(name)` | `Context.Service<Self, Shape>()(name)` (two-stage call) |
+| `Effect.Service<Self>()(name, {...})` (class form) | `Context.Service<Self, Shape>()(name)` + `Layer.effect(tag, eff)` |
+| `Context.Reference` class extension | `Context.Reference<Service>(key, { defaultValue })` function form |
 | `Effect.Effect.Success<T>` | `Effect.Success<T>` |
-| `Effect.dieMessage(msg)` | `Effect.die(msg)` |
-| `Effect.if(cond, {onTrue, onFalse})` | restructure with `if/else` returning Effects |
 | `Effect.either(eff)` | `Effect.result(eff)` |
+| `Effect.catchAll(f)` | `Effect.matchEffect({onFailure, onSuccess})` |
 | `Effect.catchTag("ParseError", ...)` | `Effect.catchTag("SchemaError", ...)` |
+| `Effect.dieMessage(msg)` | `Effect.die(msg)` |
+| `Effect.withClock(clock)` | `Effect.provideService(Clock.Clock, clock)` |
+| `Clock.make()` | build custom Clock literal (no factory in v4); methods renamed `unsafeCurrentTimeMillis` → `currentTimeMillisUnsafe` etc |
 | `Stream.unwrapScoped(eff)` | `Stream.unwrap(eff)` (scope handled in type) |
 | `Stream.asyncScoped((emit) => eff)` | `Stream.callback((queue) => eff)` |
 | `emit.single(x)` | `Queue.offerUnsafe(queue, x)` |
 | `emit.fail(e)` | `Queue.failCauseUnsafe(queue, Cause.fail(e))` |
+| `Stream.runCollect` (returns `Chunk<A>`) | returns `Array<A>` directly |
 | `Layer.scoped(tag, eff)` | `Layer.effect(tag, eff)` |
+| `Layer.setConfigProvider(p)` | `Layer.succeed(ConfigProvider.ConfigProvider, p)` |
+| `Layer.map(layer, f)` | `Layer.effect(tag, Effect.map(Effect.service(oldTag), f)).pipe(Layer.provide(layer))` |
 | `Either` (module) | `Result` |
 | `Either.getOrThrow(e)` | `Result.getOrThrow(r)` |
-| `e.right` (Either accessor) | `r.value` after `Result.isSuccess(r)` narrowing |
-| `e.left` | `r.value` after `Result.isFailure(r)` narrowing (or `Result.getFailure(r)` → Option) |
-| `Array.isEmptyReadonlyArray(arr)` | `arr.length === 0` |
-| `Hash.cached(this, value)` | (removed; inline `Hash.combine` without caching) |
+| `Either.match({onLeft, onRight})` | `Result.match({onFailure, onSuccess})` |
+| `Option.fromNullable` | `Option.fromNullishOr` |
+| `Hash.cached(this, value)` | (removed; inline `Hash.combine(...)` without caching) |
+| `Order.number` | `Order.Number` |
+| `Ref.unsafeMake` | `Ref.makeUnsafe` |
+| `Array.isEmptyReadonlyArray(arr)` / `Array.isEmptyArray` | `arr.length === 0` |
 
 ### Removed sub-packages (folded into `effect/unstable/*` in v4)
 - `@effect/platform`, `@effect/platform-node`, `@effect/platform-bun`, `@effect/platform-node-shared`
 - `@effect/cluster`, `@effect/experimental`, `@effect/rpc`, `@effect/sql`, `@effect/workflow`
 - `@effect/typeclass`
-- `@effect/cli`, `@effect/printer`, `@effect/printer-ansi` (needs `effect/unstable/cli` for CLI port)
+- `@effect/cli`, `@effect/printer`, `@effect/printer-ansi` (cli package follow-up needs `effect/unstable/cli`)
 
-### Dependency targets
-- `effect: 4.0.0-beta.67` (pinned; watch for new betas)
+### Dependency targets (current)
+- `effect: 4.0.0-beta.67`
 - `convex: ^1.39.0` peer, `1.39.1` dev
 - `convex-test: ^0.0.53` dev
-- `@effect/vitest: 4.0.0-beta.67` (for tests using `effect:` helpers)
+- `@effect/vitest: 4.0.0-beta.67`
 
 ## Resume commands
 
@@ -107,38 +133,18 @@ git checkout effect4-modernize
 git pull
 pnpm install
 
-# Check overall state
-for pkg in core js react server test cli; do
+# Per-package src typecheck:
+for pkg in core js react server test; do
   echo "=== @confect/$pkg ==="
   pnpm --filter "@confect/$pkg" typecheck 2>&1 | grep -c "^src/" || true
 done
+
+# Per-package build:
+pnpm -r --filter='@confect/*' build
 ```
-
-## Next session priorities (suggested order)
-
-1. **Finish server source port** — biggest unblocker. ~140-160 errors remain in `packages/server/src/`, mostly in `SchemaToValidator.ts`, `Document.ts`, `RegisteredConvexFunction.ts`. The bulk mechanical sweep is done; remaining errors need careful per-file work.
-2. **Fix `extendWithSystemFields` to support `Schema.Union<readonly Schema.Struct[]>` again** (currently tightened to Struct only — breaks polymorphic tables). Use `.mapMembers(Tuple.map(Schema.fieldsAssign(SystemFields(tableName).fields)))` for the Union branch.
-3. **`@confect/test` port** — depends on server building. `TestConfect.ts` only has ~10 errors after server's done.
-4. **Port test suites in core/js/react** — mostly mechanical now that patterns are known.
-5. **`@confect/cli` port** — biggest unknown. `@effect/cli` is Effect 3; needs migration to `effect/unstable/cli`. Check `effect/unstable/cli` API docs; the CLI surface (`Command`, `subcommand`, etc.) may have changed shape. May warrant a separate PR if it's too big.
-6. **`apps/example` refresh** — update imports + Effect 4 API usage; regenerate `_generated/*` via the new CLI.
-7. **Changesets** — one per meaningful change area:
-   - `effect-4-migration.md` (major)
-   - `convex-1.39-bump.md`
-   - any breakage notes
-8. **Convert PR from draft to ready**.
-
-## Known semantic gaps (not just mechanical)
-
-- **`SchemaToValidator` `Refinement`/`Transformation` tags**: dropped in old fork branch. The Effect 4 port (commit `9932d39`) addressed these — verify behavior by running tests when the test suite is ported. `Schema.Number.pipe(Schema.positive())` should still produce `v.float64()`.
-- **Effect language-service plugin enforces `unnecessaryFailYieldableError` as error**: must use `yield* new TaggedError(...)` instead of `yield* Effect.fail(new TaggedError(...))` throughout server source. Watch for this pattern when porting remaining server files.
-- **`SchemaAST.Declaration#run` typing leaks `unknown`**: Effect 4 returns `Effect<any, Issue.Issue, any>`. Server's SchemaToValidator now uses a local cast wrapper to `Effect<unknown, unknown>` (R defaults to `never`). Keep that pattern when porting other files that introspect Declarations.
-- **`extendWithSystemFields` Union<Struct[]>**: see #2 above.
-- **`SchemaAST.Declaration.decodeUnknown` usage** in `SchemaToValidator.ts`: Effect 4 changed declaration introspection. The ArrayBuffer/bytes detection may need rework.
-- **`@effect/cli` → `effect/unstable/cli`**: structural rewrite, not rename. CLI tool currently can't build at all under Effect 4.
-- **`apps/example/_generated/*`**: codegen artifacts; need the new CLI working to regenerate, or hand-write them temporarily.
 
 ## Reference
 
-Full Effect v4 migration guide: https://github.com/Effect-TS/effect-smol/blob/main/migration/schema.md
-Effect v4 d.ts ground truth: `node_modules/.pnpm/effect@4.0.0-beta.67/node_modules/effect/dist/{Schema,SchemaAST,Effect,Stream,Layer,Result,Cause,Queue,Hash,Option,Match,Array}.d.ts`
+- Effect v4 Schema migration guide: https://github.com/Effect-TS/effect-smol/blob/main/migration/schema.md
+- Effect v4 d.ts ground truth: `node_modules/.pnpm/effect@4.0.0-beta.67/node_modules/effect/dist/{Schema,SchemaAST,Effect,Stream,Layer,Result,Cause,Queue,Hash,Option,Match,Array,Order,Ref,Context,ConfigProvider,Clock}.d.ts`
+- Open Convex compat issue: https://github.com/Effect-TS/effect-smol/issues/2143 (`ConfigProvider.fromEnv` + `import.meta.env`; sidestepped by passing explicit env snapshot in `ConvexConfigProvider.ts`)
