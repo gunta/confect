@@ -68,7 +68,7 @@ export const extendWithSystemFields = <
       ),
     ) as ExtendWithSystemFields<TableName, TableSchema>;
   }
-  return (schema as Schema.Struct<Schema.Struct.Fields>).pipe(
+  return (schema as unknown as Schema.Struct<Schema.Struct.Fields>).pipe(
     Schema.fieldsAssign(systemFields),
   ) as ExtendWithSystemFields<TableName, TableSchema>;
 };
