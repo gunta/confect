@@ -28,39 +28,75 @@ export const SystemFields = <TableName extends string>(
   });
 
 /**
+ * Table schema bound: either a single struct or a union of structs.
+ *
+ * Convex tables can either be a single record shape (`Schema.Struct({...})`)
+ * or a discriminated union of record shapes
+ * (`Schema.Union([Schema.Struct({...}), Schema.Struct({...})])`).
+ */
+export type AnyTableSchema =
+  | Schema.Struct<Schema.Struct.Fields>
+  | Schema.Union<ReadonlyArray<Schema.Struct<Schema.Struct.Fields>>>;
+
+/**
  * Extend a table schema with Convex system fields.
  *
- * In Effect 4, `Schema.extend` was removed; struct fields are now merged via
- * `Schema.fieldsAssign`. Table schemas are constrained to `Schema.Struct`
- * (not arbitrary Codec) so the merge is type-safe.
+ * Effect 4 removed `Schema.extend`; struct fields are now merged via
+ * `Schema.fieldsAssign`. For a `Schema.Struct`, we pipe through `fieldsAssign`.
+ * For a `Schema.Union` of structs (polymorphic tables), we map each member
+ * through the same transformation via `Union.mapMembers`.
  */
 export const extendWithSystemFields = <
   TableName extends string,
-  TableSchema extends Schema.Struct<Schema.Struct.Fields>,
+  TableSchema extends Schema.Codec<any, any, never, never>,
 >(
   tableName: TableName,
   schema: TableSchema,
-): ExtendWithSystemFields<TableName, TableSchema> =>
-  schema.pipe(
-    Schema.fieldsAssign(SystemFields(tableName).fields),
+): ExtendWithSystemFields<TableName, TableSchema> => {
+  const systemFields = SystemFields(tableName).fields;
+  // Heuristic: a Schema.Union exposes `.mapMembers`; a Schema.Struct does not.
+  const maybeUnion = schema as unknown as {
+    mapMembers?: (
+      f: (members: ReadonlyArray<Schema.Struct<Schema.Struct.Fields>>) =>
+        ReadonlyArray<Schema.Struct<Schema.Struct.Fields>>,
+    ) => unknown;
+  };
+  if (typeof maybeUnion.mapMembers === "function") {
+    return maybeUnion.mapMembers((members) =>
+      members.map((member) =>
+        member.pipe(Schema.fieldsAssign(systemFields)),
+      ),
+    ) as ExtendWithSystemFields<TableName, TableSchema>;
+  }
+  return (schema as Schema.Struct<Schema.Struct.Fields>).pipe(
+    Schema.fieldsAssign(systemFields),
   ) as ExtendWithSystemFields<TableName, TableSchema>;
+};
 
 /**
- * Extend a table schema with Convex system fields at the type level.
+ * Type-level counterpart to `extendWithSystemFields`. Handles both single-struct
+ * and union-of-structs table schemas.
  */
 export type ExtendWithSystemFields<
   TableName extends string,
-  TableSchema extends Schema.Struct<Schema.Struct.Fields>,
-> = TableSchema extends Schema.Struct<infer Fields>
-  ? Schema.Struct<
-      StructModule.Simplify<
-        StructModule.Assign<
-          Fields,
-          SystemFieldsSchema<TableName>["fields"]
+  TableSchema extends Schema.Codec<any, any, never, never>,
+> = TableSchema extends Schema.Union<infer Members extends ReadonlyArray<Schema.Struct<Schema.Struct.Fields>>>
+  ? Schema.Union<{
+      [K in keyof Members]: Members[K] extends Schema.Struct<infer Fields>
+        ? Schema.Struct<
+            StructModule.Simplify<
+              StructModule.Assign<Fields, SystemFieldsSchema<TableName>["fields"]>
+            >
+          >
+        : never;
+    }>
+  : TableSchema extends Schema.Struct<infer Fields>
+    ? Schema.Struct<
+        StructModule.Simplify<
+          StructModule.Assign<Fields, SystemFieldsSchema<TableName>["fields"]>
         >
       >
-    >
-  : never;
+    : never;
 
 export type WithSystemFields<TableName extends string, Document> = Expand<
   Readonly<IdField<TableName>> & Readonly<NonIdSystemFields> & Document

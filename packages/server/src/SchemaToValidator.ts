@@ -34,6 +34,7 @@ import {
 } from "effect";
 
 import * as GenericId from "@confect/core/GenericId";
+import type * as SystemFields from "@confect/core/SystemFields";
 import type {
   IsAny,
   IsOptional,
@@ -77,7 +78,7 @@ export const compileReturnsSchema = <ConfectValue, ConvexValue>(
  * Convert a table `Schema` to a table `Validator`.
  */
 export type TableSchemaToTableValidator<
-  TableSchema extends Schema.Codec<any, any, never, never>,
+  TableSchema extends SystemFields.AnyTableSchema,
 > =
   ValueToValidator<TableSchema["Encoded"]> extends infer Vd extends
     | VObject<any, any, any, any>
@@ -86,7 +87,7 @@ export type TableSchemaToTableValidator<
     : never;
 
 export const compileTableSchema = <
-  TableSchema extends Schema.Codec<any, any, never, never>,
+  TableSchema extends SystemFields.AnyTableSchema,
 >(
   schema: TableSchema,
 ): TableSchemaToTableValidator<TableSchema> => {
