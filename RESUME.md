@@ -1,10 +1,10 @@
 # Resume — Effect 4 modernization (PR #1)
 
 Branch: `effect4-modernize` based on `upstream/main = dc131ae` (= post-v7.0.0).
-PR: https://github.com/gunta/confect/pull/1
+PR: https://github.com/gunta/confect/pull/1 (ready for review)
 Old branch `patentradar-effect4-compat` deleted; preserved as `archive/patentradar-effect4-compat` tag → `92b37dc`.
 
-## Final state
+## Final state — 6 of 6 packages green
 
 | Package | src typecheck | build | test typecheck |
 |---|---|---|---|
@@ -13,7 +13,7 @@ Old branch `patentradar-effect4-compat` deleted; preserved as `archive/patentrad
 | `@confect/js` | ✅ 0 errors | ✅ clean (29.5 kB) | ~57 (follow-up) |
 | `@confect/react` | ✅ 0 errors | ✅ clean (26.3 kB) | ~9 (follow-up) |
 | `@confect/test` | ✅ 0 errors | ✅ clean (18.6 kB / 7 files) | 0 |
-| `@confect/cli` | excluded from workspace | — | — |
+| `@confect/cli` | ✅ 0 errors | ✅ clean (174.9 kB / 37 files) — bin works (`confect codegen`/`dev`) | — |
 | `apps/example` | excluded from workspace | — | — |
 
 ## 25 commits on this PR
