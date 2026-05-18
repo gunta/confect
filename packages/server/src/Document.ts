@@ -68,7 +68,7 @@ export const decode = Function.dual<
         Effect.catchTag("SchemaError", (schemaError) =>
           new DocumentDecodeError({
             tableName,
-            id: encodedDoc._id,
+            id: (encodedDoc as { _id: string })._id,
             parseError: schemaError.message,
           }),
         ),
@@ -140,7 +140,7 @@ export const encode = Function.dual<
         Effect.catchTag("SchemaError", (schemaError) =>
           new DocumentEncodeError({
             tableName,
-            id: decodedDoc._id,
+            id: (decodedDoc as { _id: string })._id,
             parseError: schemaError.message,
           }),
         ),

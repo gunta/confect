@@ -39,9 +39,9 @@ export const make = <DatabaseSchema_ extends DatabaseSchema.AnyWithProps>(
     ) =>
       Effect.gen(function* () {
         const encodedDocument = yield* Document.encode(
-          document,
+          document as never,
           tableName,
-          tableDef.Fields,
+          tableDef.Fields as never,
         );
 
         const id = yield* Effect.promise(() =>
@@ -71,12 +71,13 @@ export const make = <DatabaseSchema_ extends DatabaseSchema.AnyWithProps>(
 
         const updatedEncodedDoc = yield* pipe(
           patchedValues,
-          Record.reduce(originalDecodedDoc, (acc, value, key) =>
+          Record.reduce(originalDecodedDoc as Record<string, unknown>, (acc, value, key) =>
             value === undefined
               ? Record.remove(acc, key)
               : Record.set(acc, key, value),
           ),
-          Document.encode(tableName, tableSchema),
+          (mergedDoc) =>
+            Document.encode(mergedDoc as never, tableName, tableSchema as never),
         );
 
         yield* Effect.promise(() =>
@@ -98,9 +99,9 @@ export const make = <DatabaseSchema_ extends DatabaseSchema.AnyWithProps>(
     ) =>
       Effect.gen(function* () {
         const updatedEncodedDoc = yield* Document.encode(
-          value,
+          value as never,
           tableName,
-          tableSchema,
+          tableSchema as never,
         );
 
         yield* Effect.promise(() =>

@@ -149,7 +149,7 @@ export const make = <
             )
           : Effect.succeed(value),
       ),
-      Effect.andThen(Document.decode(tableName, table.Fields)),
+      Effect.andThen(Document.decode(tableName, table.Fields as never)),
     );
   };
 
@@ -280,7 +280,7 @@ export const getById =
           ? Effect.fail(new GetByIdFailure({ tableName, id }))
           : Effect.succeed(value),
       ),
-      Effect.andThen(Document.decode(tableName, table.Fields)),
+      Effect.andThen(Document.decode(tableName, table.Fields as never)),
     );
 
 export class GetByIdFailure extends Schema.TaggedErrorClass<GetByIdFailure>()(
