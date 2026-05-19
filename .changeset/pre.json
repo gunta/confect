@@ -7,7 +7,17 @@
     "@confect/js": "7.0.0",
     "@confect/react": "7.0.0",
     "@confect/server": "7.0.0",
-    "@confect/test": "7.0.0"
+    "@confect/test": "7.0.0",
+    "@confect/server-local-backend-fixtures": "0.0.0",
+    "@confect/server-mock-backend-fixtures": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "break-cli-server-cycle",
+    "bump-effect-platform",
+    "cli-resolve-from-user-project",
+    "clock-unsafe-no-realtime",
+    "convex-1.39",
+    "effect-4-migration",
+    "peer-deps-workspace-caret"
+  ]
 }
